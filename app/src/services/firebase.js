@@ -1,6 +1,8 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 
+// ⚠️  Move these to environment variables before going to production.
+// Use app.config.js + expo-constants to inject them safely.
 const firebaseConfig = {
   apiKey: "AIzaSyBvTVwuWT-sS7DqBmC0EpqJbg_DaT7PlXM",
   authDomain: "baby-tracker-001.firebaseapp.com",
