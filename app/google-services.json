@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "597738558005",
+    "project_id": "baby-tracker-007",
+    "storage_bucket": "baby-tracker-007.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:597738558005:android:8f3663da8aadd1c169577c",
+        "android_client_info": {
+          "package_name": "baby.tracker.DB"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCNcCHpTKoCthsnb83WkDeftpTHugWzHyE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
