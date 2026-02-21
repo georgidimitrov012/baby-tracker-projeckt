@@ -11,26 +11,17 @@ import {
 } from "firebase/firestore";
 import { db } from "./firebase";
 
-/**
- * Returns the Firestore collection ref for a baby's events.
- * Path: babies/{babyId}/events
- *
- * Subcollection (not flat) so that:
- *  - Multiple babies work with zero schema changes
- *  - Security rules are enforced per-baby
- *  - Auth plugs in by writing a real UID as babyId
- */
 function eventsRef(babyId) {
   return collection(db, "babies", babyId, "events");
 }
 
 /**
- * Subscribe to all events for a baby, ordered newest first (server-side).
+ * Subscribe to all events for a baby, ordered newest first.
  *
  * @param {string}   babyId
- * @param {function} onData  - called with events array on every Firestore change
- * @param {function} onError - called if the subscription errors
- * @returns {function} unsubscribe — call in useEffect cleanup
+ * @param {function} onData
+ * @param {function} onError
+ * @returns {function} unsubscribe
  */
 export function subscribeToEvents(babyId, onData, onError) {
   const q = query(eventsRef(babyId), orderBy("time", "desc"));
@@ -41,7 +32,6 @@ export function subscribeToEvents(babyId, onData, onError) {
       const events = snapshot.docs.map((d) => ({
         id: d.id,
         ...d.data(),
-        // Convert Firestore Timestamp → JS Date so screens don't need to
         time: d.data().time?.toDate() ?? new Date(),
       }));
       onData(events);
@@ -55,19 +45,21 @@ export function subscribeToEvents(babyId, onData, onError) {
 
 /**
  * Add a new event.
- * serverTimestamp() lets Firestore set the authoritative time —
- * avoids client clock skew that breaks orderBy("time").
+ * loggedBy records which parent logged this event — important for
+ * shared parenting where two parents track the same baby.
  *
  * @param {string} babyId
- * @param {string} type   - "feeding" | "sleep" | "poop" | "pee"
- * @param {object} fields - type-specific fields (amount, duration, start, end, etc.)
+ * @param {string} userId   - who is logging this event
+ * @param {string} type
+ * @param {object} fields
  * @returns {Promise<string>} new document ID
  */
-export async function addEvent(babyId, type, fields = {}) {
+export async function addEvent(babyId, userId, type, fields = {}) {
   const docRef = await addDoc(eventsRef(babyId), {
     type,
     ...fields,
-    time: serverTimestamp(),
+    loggedBy:  userId,
+    time:      serverTimestamp(),
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
@@ -76,11 +68,10 @@ export async function addEvent(babyId, type, fields = {}) {
 
 /**
  * Update an existing event.
- * Only the provided fields are updated. type and createdAt are never changed.
  *
  * @param {string} babyId
  * @param {string} eventId
- * @param {object} fields - fields to update (e.g. { amount: 120 } or { duration: 45 })
+ * @param {object} fields
  * @returns {Promise<void>}
  */
 export async function updateEvent(babyId, eventId, fields) {
@@ -92,7 +83,7 @@ export async function updateEvent(babyId, eventId, fields) {
 }
 
 /**
- * Permanently delete an event.
+ * Delete an event permanently.
  *
  * @param {string} babyId
  * @param {string} eventId
