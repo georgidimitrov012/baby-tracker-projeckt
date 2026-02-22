@@ -19,6 +19,11 @@ export default function Sleep({ navigation }) {
   const handleStop = async () => {
     if (!start || isSubmitting.current) return;
 
+    if (!activeBabyId) {
+        showAlert("No baby selected", "Please add or select a baby from the Dashboard first.");
+        return;
+      }
+
     const end      = new Date();
     const duration = Math.round((end - start) / 60000);
 

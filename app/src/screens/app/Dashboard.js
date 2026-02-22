@@ -18,6 +18,8 @@ const BUTTONS = [
   { screen: "Pee",     icon: "💧", label: "Log Pee",     color: "#e0f7fa", text: "#00695c" },
   { screen: "Sleep",   icon: "😴", label: "Sleep",       color: "#f3e5f5", text: "#6a1b9a" },
   { screen: "History", icon: "📋", label: "History",     color: "#e8f5e9", text: "#2e7d32" },
+  { screen: "Invites",       icon: "📬", label: "Invites",        color: "#fce4ec", text: "#880e4f" },
+  { screen: "ManageMembers", icon: "👥", label: "Manage Members", color: "#ede7f6", text: "#4527a0" },
 ];
 
 export default function Dashboard({ navigation }) {
@@ -85,6 +87,24 @@ export default function Dashboard({ navigation }) {
             <Text style={styles.babyPillIcon}>👶</Text>
             <Text style={styles.babyPillName}>
               {activeBaby ? activeBaby.name : "Add a baby"}
+            </Text>
+            <Text style={styles.babyPillChevron}>›</Text>
+          </>
+        )}
+      </TouchableOpacity>
+
+      {/* No active baby guard */}
+      <TouchableOpacity
+        style={[styles.babyPill, !activeBaby && styles.babyPillWarning]}
+        onPress={() => navigation.navigate("BabySelector")}
+      >
+        {loadingBabies ? (
+          <ActivityIndicator size="small" color="#1565c0" />
+        ) : (
+          <>
+            <Text style={styles.babyPillIcon}>{activeBaby ? "👶" : "⚠️"}</Text>
+            <Text style={styles.babyPillName}>
+              {activeBaby ? activeBaby.name : "No baby — tap to add one"}
             </Text>
             <Text style={styles.babyPillChevron}>›</Text>
           </>
@@ -168,6 +188,9 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: "#1565c0",
     fontWeight: "300",
+  },
+  babyPillWarning: {
+    backgroundColor: "#fff3e0",
   },
   buttons: {
     gap: 12,

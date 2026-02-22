@@ -13,6 +13,12 @@ export default function Pee({ navigation }) {
 
   const handleSave = async () => {
     if (isSubmitting.current) return;
+
+    if (!activeBabyId) {
+        showAlert("No baby selected", "Please add or select a baby from the Dashboard first.");
+        return;
+      }
+
     isSubmitting.current = true;
     setSaving(true);
     try {

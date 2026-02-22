@@ -1,5 +1,8 @@
 import React from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import InviteParentScreen  from "../screens/app/InviteParentScreen";
+import InvitesScreen       from "../screens/app/InvitesScreen";
+import ManageMembersScreen from "../screens/app/ManageMembersScreen";
 import Dashboard           from "../screens/app/Dashboard";
 import Feeding             from "../screens/app/Feeding";
 import Sleep               from "../screens/app/Sleep";
@@ -71,6 +74,21 @@ export default function AppNavigator() {
         component={PrivacyPolicyScreen}
         options={{ title: "Privacy Policy" }}
       />
+      <Stack.Screen
+          name="InviteParent"
+          component={InviteParentScreen}
+          options={{ title: "Invite Parent" }}
+        />
+        <Stack.Screen
+          name="Invites"
+          component={InvitesScreen}
+          options={{ title: "Pending Invites" }}
+        />
+        <Stack.Screen
+          name="ManageMembers"
+          component={ManageMembersScreen}
+          options={{ title: "Manage Members" }}
+        />
     </Stack.Navigator>
   );
 }

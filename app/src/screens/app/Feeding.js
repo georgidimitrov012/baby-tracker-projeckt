@@ -27,6 +27,11 @@ export default function Feeding({ navigation }) {
   const handleSave = async () => {
     if (isSubmitting.current) return;
 
+    if (!activeBabyId) {
+        showAlert("No baby selected", "Please add or select a baby from the Dashboard first.");
+        return;
+      }
+
     const { valid, error } = validateAmount(amount);
     if (!valid) { setAmountError(error); return; }
     setAmountError(null);
