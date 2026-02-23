@@ -12,6 +12,7 @@ import History             from "../screens/app/History";
 import EditEvent           from "../screens/app/EditEvent";
 import BabySelector        from "../screens/app/BabySelector";
 import PrivacyPolicyScreen from "../screens/legal/PrivacyPolicyScreen";
+import AnalyticsScreen     from "../screens/app/AnalyticsScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -89,6 +90,11 @@ export default function AppNavigator() {
           component={ManageMembersScreen}
           options={{ title: "Manage Members" }}
         />
+        <Stack.Screen
+            name="Analytics"
+            component={AnalyticsScreen}
+            options={{ title: "Analytics" }}
+          />
     </Stack.Navigator>
   );
 }

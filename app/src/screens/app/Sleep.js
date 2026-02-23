@@ -1,83 +1,90 @@
-import React, { useState, useRef } from "react";
+import React from "react";
 import {
-  View, Text, TouchableOpacity, ActivityIndicator, StyleSheet,
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
 } from "react-native";
-import { useAuth }   from "../../context/AuthContext";
-import { useBaby }   from "../../context/BabyContext";
-import { addEvent }  from "../../services/eventStore";
-import { showAlert } from "../../utils/platform";
+import SleepTimerCard from "../../components/SleepTimerCard";
+import { useSleepTimer, formatElapsed } from "../../hooks/useSleepTimer";
+import { usePermissions } from "../../hooks/usePermissions";
 
-export default function Sleep({ navigation }) {
-  const { user }         = useAuth();
-  const { activeBabyId } = useBaby();
-  const [start, setStart]   = useState(null);
-  const [saving, setSaving] = useState(false);
-  const isSubmitting        = useRef(false);
+export default function Sleep() {
+  const { isActive, elapsedSeconds, startedAt } = useSleepTimer();
+  const { canWriteEvents }                       = usePermissions();
 
-  const handleStart = () => setStart(new Date());
-
-  const handleStop = async () => {
-    if (!start || isSubmitting.current) return;
-
-    if (!activeBabyId) {
-        showAlert("No baby selected", "Please add or select a baby from the Dashboard first.");
-        return;
-      }
-
-    const end      = new Date();
-    const duration = Math.round((end - start) / 60000);
-
-    isSubmitting.current = true;
-    setSaving(true);
-
-    try {
-      await addEvent(activeBabyId, user.uid, "sleep", {
-        start:    start.toISOString(),
-        end:      end.toISOString(),
-        duration,
-      });
-      navigation.goBack();
-    } catch (e) {
-      console.error("[Sleep] save error:", e);
-      showAlert("Error", e.message);
-    } finally {
-      isSubmitting.current = false;
-      setSaving(false);
-    }
-  };
+  const startTimeStr = startedAt
+    ? startedAt.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })
+    : null;
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Sleep Tracker</Text>
-      {start ? (
-        <Text style={styles.elapsed}>
-          Started at {start.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}
-        </Text>
-      ) : null}
-      {!start ? (
-        <TouchableOpacity style={[styles.btn, styles.startBtn]} onPress={handleStart}>
-          <Text style={styles.btnText}>▶  Start Sleep</Text>
-        </TouchableOpacity>
+    <ScrollView contentContainerStyle={styles.container}>
+      <Text style={styles.title}>Sleep Tracker 😴</Text>
+
+      {/* Main timer card — handles start/stop logic internally */}
+      <SleepTimerCard compact={false} />
+
+      {/* Info panel while sleeping */}
+      {isActive ? (
+        <View style={styles.infoCard}>
+          <Text style={styles.infoRow}>
+            🕐 Started at <Text style={styles.infoBold}>{startTimeStr}</Text>
+          </Text>
+          <Text style={styles.infoRow}>
+            ⏱ Elapsed{" "}
+            <Text style={styles.infoBold}>{formatElapsed(elapsedSeconds)}</Text>
+          </Text>
+          <Text style={styles.infoNote}>
+            You can close the app — the timer is saved in the cloud and will still be correct when you return.
+          </Text>
+        </View>
       ) : (
-        <TouchableOpacity
-          style={[styles.btn, styles.stopBtn, saving && styles.btnDisabled]}
-          onPress={handleStop}
-          disabled={saving}
-        >
-          {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>⏹  Stop &amp; Save</Text>}
-        </TouchableOpacity>
+        <View style={styles.infoCard}>
+          <Text style={styles.infoNote}>
+            {canWriteEvents
+              ? "Tap Start Sleep above when your baby falls asleep. The timer is visible to all parents in realtime."
+              : "You have read-only access. You can view active sleep sessions but cannot start or stop them."}
+          </Text>
+        </View>
       )}
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: "center", padding: 20 },
-  title: { fontSize: 22, textAlign: "center", fontWeight: "700", color: "#1a1a2e", marginBottom: 20 },
-  elapsed: { fontSize: 15, textAlign: "center", color: "#6a1b9a", marginBottom: 28 },
-  btn: { borderRadius: 12, padding: 18, alignItems: "center" },
-  startBtn: { backgroundColor: "#6a1b9a" },
-  stopBtn: { backgroundColor: "#c62828" },
-  btnDisabled: { opacity: 0.55 },
-  btnText: { color: "#fff", fontSize: 17, fontWeight: "700" },
+  container: {
+    padding: 24,
+    paddingBottom: 48,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#1a1a2e",
+    textAlign: "center",
+    marginBottom: 24,
+  },
+  infoCard: {
+    backgroundColor: "#fff",
+    borderRadius: 14,
+    padding: 18,
+    gap: 10,
+    elevation: 1,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 2,
+  },
+  infoRow: {
+    fontSize: 15,
+    color: "#555",
+  },
+  infoBold: {
+    fontWeight: "700",
+    color: "#1a1a2e",
+  },
+  infoNote: {
+    fontSize: 13,
+    color: "#999",
+    lineHeight: 19,
+  },
 });

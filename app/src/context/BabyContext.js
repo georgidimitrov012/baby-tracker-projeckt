@@ -1,90 +1,136 @@
 import React, {
   createContext,
   useContext,
-  useEffect,
   useState,
-  useCallback,
+  useEffect,
+  useRef,
 } from "react";
-import { getBabiesForUser, createBaby } from "../services/babyService";
-import { useAuth } from "./AuthContext";
+import {
+  collection,
+  query,
+  where,
+  onSnapshot,
+} from "firebase/firestore";
+import { db }        from "../services/firebase";
+import { useAuth }   from "./AuthContext";
 
 /**
- * BabyContext manages:
- *   - The list of babies belonging to the current user
- *   - Which baby is currently active (being tracked)
+ * BabyContext
  *
- * When the user logs in, their babies are loaded from Firestore.
- * When they log out (user becomes null), everything resets.
+ * IMPORTANT CHANGE FROM ORIGINAL:
+ * We now use onSnapshot (realtime subscription) instead of getDocs (one-shot).
  *
- * Multi-baby: user switches active baby via setActiveBabyId.
- * All screens read activeBabyId from this context — zero changes needed there.
+ * WHY THIS MATTERS FOR SLEEP TIMER:
+ * When Parent A starts a sleep session, Firestore updates
+ * babies/{babyId}.activeSleepStart. Parent B (on a different device)
+ * needs to see this change immediately — the live timer must start
+ * on their screen without a manual refresh.
+ *
+ * onSnapshot fires automatically whenever the baby document changes,
+ * so both parents always have the current activeSleepStart value.
  */
+
 const BabyContext = createContext(null);
 
 export function BabyProvider({ children }) {
-  const { user } = useAuth();
+  const { user }          = useAuth();
 
   const [babies, setBabies]           = useState([]);
   const [activeBabyId, setActiveBabyId] = useState(null);
-  const [loadingBabies, setLoadingBabies] = useState(false);
+  const [loadingBabies, setLoadingBabies] = useState(true);
 
-  // Reload babies whenever the user changes (login / logout)
-  const loadBabies = useCallback(async () => {
+  // Keep a ref to the unsubscribe function so we can clean up
+  const unsubRef = useRef(null);
+
+  useEffect(() => {
+    // Clean up previous subscription
+    if (unsubRef.current) {
+      unsubRef.current();
+      unsubRef.current = null;
+    }
+
     if (!user) {
       setBabies([]);
       setActiveBabyId(null);
+      setLoadingBabies(false);
       return;
     }
 
     setLoadingBabies(true);
-    try {
-      const result = await getBabiesForUser(user.uid);
-      setBabies(result);
 
-      // Auto-select the first baby, or keep existing selection if still valid
-      if (result.length > 0) {
-        setActiveBabyId((prev) => {
-          const stillValid = result.some((b) => b.id === prev);
-          return stillValid ? prev : result[0].id;
+    // Subscribe to all babies where this user is a member.
+    // This query fires again whenever ANY of the matched baby documents
+    // change — including activeSleepStart updates.
+    const q = query(
+      collection(db, "babies"),
+      where(`members.${user.uid}`, "!=", null)
+    );
+
+    unsubRef.current = onSnapshot(
+      q,
+      (snapshot) => {
+        const loaded = snapshot.docs.map((d) => {
+          const data = d.data();
+
+          // Repair old boolean members map (pre-RBAC migration)
+          const memberRole = data.members?.[user.uid];
+          if (memberRole === true) {
+            console.warn("[BabyContext] Found boolean member role, needs repair:", d.id);
+          }
+
+          return {
+            id:        d.id,
+            ...data,
+            // Timestamps stay as Firestore Timestamp objects so
+            // useSleepTimer can call .toDate() on activeSleepStart
+            createdAt: data.createdAt ?? null,
+            birthDate: data.birthDate ?? null,
+          };
         });
-      } else {
-        setActiveBabyId(null);
+
+        setBabies(loaded);
+
+        // Auto-select first baby if none selected or previous selection gone
+        setActiveBabyId((prev) => {
+          const stillExists = loaded.some((b) => b.id === prev);
+          if (stillExists) return prev;
+          return loaded.length > 0 ? loaded[0].id : null;
+        });
+
+        setLoadingBabies(false);
+      },
+      (error) => {
+        console.error("[BabyContext] loadBabies error:", error);
+        setLoadingBabies(false);
       }
-    } catch (err) {
-      console.error("[BabyContext] loadBabies error:", err);
-    } finally {
-      setLoadingBabies(false);
-    }
-  }, [user]);
+    );
 
-  useEffect(() => {
-    loadBabies();
-  }, [loadBabies]);
-
-  /**
-   * Create a new baby and add it to the list.
-   * After creation, switch to the new baby automatically.
-   */
-  const addBaby = useCallback(async (name, birthDate = null) => {
-    if (!user) return;
-    const newId = await createBaby(user.uid, name, birthDate);
-    await loadBabies(); // refresh the list
-    setActiveBabyId(newId);
-    return newId;
-  }, [user, loadBabies]);
+    return () => {
+      if (unsubRef.current) unsubRef.current();
+    };
+  }, [user?.uid]);
 
   const activeBaby = babies.find((b) => b.id === activeBabyId) ?? null;
 
+  // refreshBabies is a no-op now (onSnapshot handles updates automatically)
+  // Kept for compatibility with InvitesScreen which calls it after accepting
+  const refreshBabies = async () => {
+    // onSnapshot will fire automatically — nothing to do here
+    // Small delay so callers can await it without errors
+    return new Promise((resolve) => setTimeout(resolve, 300));
+  };
+
   return (
-    <BabyContext.Provider value={{
-      babies,
-      activeBabyId,
-      activeBaby,
-      setActiveBabyId,
-      addBaby,
-      loadingBabies,
-      refreshBabies: loadBabies,
-    }}>
+    <BabyContext.Provider
+      value={{
+        babies,
+        activeBabyId,
+        activeBaby,
+        setActiveBabyId,
+        loadingBabies,
+        refreshBabies,
+      }}
+    >
       {children}
     </BabyContext.Provider>
   );
@@ -92,6 +138,6 @@ export function BabyProvider({ children }) {
 
 export function useBaby() {
   const ctx = useContext(BabyContext);
-  if (!ctx) throw new Error("useBaby must be used inside <BabyProvider>");
+  if (!ctx) throw new Error("useBaby must be used inside BabyProvider");
   return ctx;
 }
