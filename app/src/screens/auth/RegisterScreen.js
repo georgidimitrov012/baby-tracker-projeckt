@@ -14,11 +14,13 @@ import { registerUser } from "../../services/authService";
 import { useBaby }      from "../../context/BabyContext";
 
 export default function RegisterScreen({ navigation }) {
-  const { addBaby }         = useBaby();
+  const { addBaby } = useBaby();
+
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail]             = useState("");
   const [password, setPassword]       = useState("");
   const [babyName, setBabyName]       = useState("");
+  const [addingBaby, setAddingBaby]   = useState(false); // toggle
   const [error, setError]             = useState(null);
   const [loading, setLoading]         = useState(false);
   const isSubmitting                  = useRef(false);
@@ -27,20 +29,14 @@ export default function RegisterScreen({ navigation }) {
     if (isSubmitting.current) return;
     setError(null);
 
-    if (!displayName.trim()) {
-      setError("Please enter your name.");
-      return;
-    }
-    if (!email.trim()) {
-      setError("Please enter your email.");
-      return;
-    }
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters.");
-      return;
-    }
-    if (!babyName.trim()) {
-      setError("Please enter your baby's name.");
+    // Validate account fields
+    if (!displayName.trim()) { setError("Please enter your name."); return; }
+    if (!email.trim())       { setError("Please enter your email."); return; }
+    if (password.length < 6) { setError("Password must be at least 6 characters."); return; }
+
+    // Only validate baby name if the user chose to add one
+    if (addingBaby && !babyName.trim()) {
+      setError("Please enter your baby's name, or uncheck 'Add a baby'.");
       return;
     }
 
@@ -51,14 +47,14 @@ export default function RegisterScreen({ navigation }) {
       // 1. Create Firebase Auth account + Firestore user doc
       await registerUser(email.trim(), password, displayName.trim());
 
-      // 2. Create the first baby — BabyContext.addBaby reads the user
-      //    from AuthContext, which has already updated by now.
-      //    We use a small delay to ensure AuthContext has the new user.
-      //    In practice onAuthStateChanged fires synchronously before
-      //    registerUser resolves, so this is usually instant.
-      await addBaby(babyName.trim());
+      // 2. Optionally create the first baby
+      if (addingBaby && babyName.trim()) {
+        await addBaby(babyName.trim());
+      }
 
       // RootNavigator detects user change and navigates to AppNavigator.
+      // If no baby was added, Dashboard shows the "No baby" pill prompting
+      // the user to add one or wait for an invite.
     } catch (e) {
       console.error("[Register] error:", e);
       setError(friendlyError(e.code));
@@ -84,6 +80,8 @@ export default function RegisterScreen({ navigation }) {
         {error ? <Text style={styles.errorBanner}>{error}</Text> : null}
 
         <View style={styles.form}>
+
+          {/* Account fields */}
           <Text style={styles.label}>Your Name</Text>
           <TextInput
             style={styles.input}
@@ -116,21 +114,52 @@ export default function RegisterScreen({ navigation }) {
             placeholder="At least 6 characters"
             placeholderTextColor="#bbb"
             secureTextEntry
-            returnKeyType="next"
+            returnKeyType={addingBaby ? "next" : "done"}
+            onSubmitEditing={addingBaby ? undefined : handleRegister}
           />
 
-          <Text style={styles.sectionHeading}>Your Baby</Text>
+          {/* ── Optional baby section ──────────────────────── */}
+          <TouchableOpacity
+            style={styles.toggleRow}
+            onPress={() => {
+              setAddingBaby((v) => !v);
+              setError(null);
+            }}
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: addingBaby }}
+          >
+            <View style={[styles.checkbox, addingBaby && styles.checkboxChecked]}>
+              {addingBaby ? <Text style={styles.checkmark}>✓</Text> : null}
+            </View>
+            <View style={styles.toggleTextBlock}>
+              <Text style={styles.toggleLabel}>Add a baby now</Text>
+              <Text style={styles.toggleSub}>
+                Skip if you were invited by another parent or are a pediatrician
+              </Text>
+            </View>
+          </TouchableOpacity>
 
-          <Text style={styles.label}>Baby's Name</Text>
-          <TextInput
-            style={styles.input}
-            value={babyName}
-            onChangeText={setBabyName}
-            placeholder="e.g. Emma"
-            placeholderTextColor="#bbb"
-            returnKeyType="done"
-            onSubmitEditing={handleRegister}
-          />
+          {addingBaby ? (
+            <View style={styles.babySection}>
+              <Text style={styles.label}>Baby's Name</Text>
+              <TextInput
+                style={styles.input}
+                value={babyName}
+                onChangeText={setBabyName}
+                placeholder="e.g. Emma"
+                placeholderTextColor="#bbb"
+                returnKeyType="done"
+                onSubmitEditing={handleRegister}
+                autoFocus={false}
+              />
+            </View>
+          ) : (
+            <View style={styles.skipNote}>
+              <Text style={styles.skipNoteText}>
+                💡 You can add a baby later from the Dashboard, or accept an invite from another parent.
+              </Text>
+            </View>
+          )}
         </View>
 
         <TouchableOpacity
@@ -210,24 +239,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: "center",
   },
-  form: {
-    marginBottom: 20,
-  },
+  form: { marginBottom: 20 },
   label: {
     fontSize: 14,
     fontWeight: "600",
     color: "#444",
     marginBottom: 6,
-  },
-  sectionHeading: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#1a1a2e",
-    marginTop: 8,
-    marginBottom: 16,
-    borderTopWidth: 1,
-    borderTopColor: "#eee",
-    paddingTop: 16,
   },
   input: {
     height: 48,
@@ -240,6 +257,68 @@ const styles = StyleSheet.create({
     color: "#111",
     marginBottom: 16,
   },
+
+  // Toggle row
+  toggleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 16,
+    paddingVertical: 4,
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: "#ccc",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  checkboxChecked: {
+    backgroundColor: "#1565c0",
+    borderColor: "#1565c0",
+  },
+  checkmark: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  toggleTextBlock: { flex: 1 },
+  toggleLabel: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#1a1a2e",
+  },
+  toggleSub: {
+    fontSize: 12,
+    color: "#999",
+    marginTop: 2,
+  },
+
+  // Baby section (shown when toggle is on)
+  babySection: {
+    backgroundColor: "#f8f9fa",
+    borderRadius: 10,
+    padding: 14,
+    marginBottom: 4,
+  },
+
+  // Skip note (shown when toggle is off)
+  skipNote: {
+    backgroundColor: "#e8f5e9",
+    borderRadius: 10,
+    padding: 14,
+    marginBottom: 4,
+  },
+  skipNoteText: {
+    fontSize: 13,
+    color: "#2e7d32",
+    lineHeight: 19,
+  },
+
+  // Submit
   btn: {
     backgroundColor: "#1565c0",
     borderRadius: 12,
@@ -253,16 +332,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
   },
-  link: {
-    alignItems: "center",
-    padding: 8,
-  },
-  linkText: {
-    fontSize: 14,
-    color: "#888",
-  },
-  linkBold: {
-    color: "#1565c0",
-    fontWeight: "600",
-  },
+  link: { alignItems: "center", padding: 8 },
+  linkText: { fontSize: 14, color: "#888" },
+  linkBold: { color: "#1565c0", fontWeight: "600" },
 });

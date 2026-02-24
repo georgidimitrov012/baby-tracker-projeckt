@@ -4,7 +4,19 @@
     "slug": "baby-tracker",
     "version": "1.0.0",
     "orientation": "portrait",
-    "platforms": ["android", "ios", "web"],
-    "sdkVersion": "50.0.0"
+    "platforms": [
+      "android",
+      "ios",
+      "web"
+    ],
+    "sdkVersion": "50.0.0",
+    "extra": {
+      "eas": {
+        "projectId": "717b6f71-410c-4beb-8d21-eb39e0dcde85"
+      }
+    },
+    "android": {
+      "package": "com.noclue365.babytracker"
+    }
   }
 }
