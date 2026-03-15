@@ -18,6 +18,7 @@ import { notifyCoParents, rescheduleAfterFeeding } from "../../services/notifica
 import { validateAmount, validateFeedingDuration } from "../../utils/validation";
 import { showAlert }           from "../../utils/platform";
 import FormInput               from "../../components/FormInput";
+import { useTheme }            from "../../context/ThemeContext";
 
 const FEEDING_TYPES = [
   { key: "bottle",  label: "🍼 Bottle"  },
@@ -29,6 +30,8 @@ export default function Feeding({ navigation }) {
   const { user }                      = useAuth();
   const { activeBabyId, activeBaby }  = useBaby();
   const { canWriteEvents }            = usePermissions();
+  const { theme }                     = useTheme();
+  const s                             = makeStyles(theme);
 
   const [feedingType, setFeedingType] = useState("bottle");
   const [amount, setAmount]           = useState("");
@@ -101,22 +104,22 @@ export default function Feeding({ navigation }) {
 
   return (
     <KeyboardAvoidingView
-      style={styles.flex}
+      style={s.flex}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <ScrollView
-        contentContainerStyle={styles.container}
+        contentContainerStyle={s.container}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={styles.title}>Log Feeding 🍼</Text>
+        <Text style={s.title}>Log Feeding 🍼</Text>
 
         {/* Feeding type picker */}
-        <Text style={styles.typeLabel}>Type</Text>
-        <View style={styles.typeRow}>
+        <Text style={s.typeLabel}>Type</Text>
+        <View style={s.typeRow}>
           {FEEDING_TYPES.map(({ key, label }) => (
             <TouchableOpacity
               key={key}
-              style={[styles.typeBtn, feedingType === key && styles.typeBtnActive]}
+              style={[s.typeBtn, feedingType === key && s.typeBtnActive]}
               onPress={() => {
                 setFeedingType(key);
                 setAmountError(null);
@@ -125,7 +128,7 @@ export default function Feeding({ navigation }) {
               accessibilityRole="button"
               accessibilityLabel={label}
             >
-              <Text style={[styles.typeBtnText, feedingType === key && styles.typeBtnTextActive]}>
+              <Text style={[s.typeBtnText, feedingType === key && s.typeBtnTextActive]}>
                 {label}
               </Text>
             </TouchableOpacity>
@@ -163,11 +166,11 @@ export default function Feeding({ navigation }) {
         )}
 
         <TextInput
-          style={styles.notesInput}
+          style={s.notesInput}
           value={notes}
           onChangeText={setNotes}
           placeholder="Notes (optional)"
-          placeholderTextColor="#A599BE"
+          placeholderTextColor={theme.placeholder}
           multiline
           numberOfLines={3}
           keyboardType="default"
@@ -175,7 +178,7 @@ export default function Feeding({ navigation }) {
         />
 
         <TouchableOpacity
-          style={[styles.btn, (saving || !canWriteEvents) && styles.btnDisabled]}
+          style={[s.btn, (saving || !canWriteEvents) && s.btnDisabled]}
           onPress={handleSave}
           disabled={saving || !canWriteEvents}
           accessibilityRole="button"
@@ -183,12 +186,12 @@ export default function Feeding({ navigation }) {
         >
           {saving
             ? <ActivityIndicator color="#fff" />
-            : <Text style={styles.btnText}>Save</Text>
+            : <Text style={s.btnText}>Save</Text>
           }
         </TouchableOpacity>
 
         {!canWriteEvents ? (
-          <Text style={styles.readOnlyNote}>
+          <Text style={s.readOnlyNote}>
             You have read-only access and cannot log events.
           </Text>
         ) : null}
@@ -197,24 +200,25 @@ export default function Feeding({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: "#FBF8FF" },
+const makeStyles = (theme) => StyleSheet.create({
+  flex: { flex: 1, backgroundColor: theme.background },
   container: {
     flexGrow: 1,
     padding: 24,
     justifyContent: "center",
+    backgroundColor: theme.background,
   },
   title: {
     fontSize: 24,
     fontWeight: "800",
-    color: "#1C1830",
+    color: theme.text,
     textAlign: "center",
     marginBottom: 28,
   },
   typeLabel: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#A599BE",
+    color: theme.textMuted,
     textTransform: "uppercase",
     letterSpacing: 0.8,
     marginBottom: 10,
@@ -228,44 +232,44 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 12,
     borderRadius: 14,
-    backgroundColor: "#F7F4FE",
+    backgroundColor: theme.inputBg,
     alignItems: "center",
     borderWidth: 2,
     borderColor: "transparent",
   },
   typeBtnActive: {
-    backgroundColor: "#F0EAFF",
-    borderColor: "#7B5EA7",
+    backgroundColor: theme.primaryLight,
+    borderColor: theme.primary,
   },
   typeBtnText: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#A599BE",
+    color: theme.textMuted,
   },
   typeBtnTextActive: {
-    color: "#7B5EA7",
+    color: theme.primary,
   },
   notesInput: {
     borderWidth: 1.5,
-    borderColor: "#EDE6FA",
+    borderColor: theme.border,
     borderRadius: 14,
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 15,
-    backgroundColor: "#F7F4FE",
-    color: "#1C1830",
+    backgroundColor: theme.inputBg,
+    color: theme.inputText,
     minHeight: 90,
     marginBottom: 18,
     textAlignVertical: "top",
   },
   btn: {
-    backgroundColor: "#F4845F",
+    backgroundColor: theme.accent,
     borderRadius: 16,
     height: 56,
     alignItems: "center",
     justifyContent: "center",
     marginTop: 4,
-    shadowColor: "#F4845F",
+    shadowColor: theme.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 10,
@@ -279,7 +283,7 @@ const styles = StyleSheet.create({
   },
   readOnlyNote: {
     textAlign: "center",
-    color: "#E88C3A",
+    color: theme.warning,
     fontSize: 13,
     marginTop: 16,
   },

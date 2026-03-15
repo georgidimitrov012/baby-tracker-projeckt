@@ -14,6 +14,7 @@ import { usePermissions }         from "../../hooks/usePermissions";
 import { useSleepTimer }          from "../../hooks/useSleepTimer";
 import { useEvents }              from "../../hooks/useEvents";
 import { useReminders }           from "../../hooks/useReminders";
+import { useTheme }               from "../../context/ThemeContext";
 import RoleBadge                  from "../../components/RoleBadge";
 import SleepTimerCard             from "../../components/SleepTimerCard";
 import OfflineBanner              from "../../components/OfflineBanner";
@@ -48,6 +49,9 @@ const ACTIVITY_TYPES = [
 ];
 
 function LastActivityCard({ events }) {
+  const { theme } = useTheme();
+  const s = makeStyles(theme);
+
   if (!events || events.length === 0) return null;
 
   const lastByType = {};
@@ -59,16 +63,16 @@ function LastActivityCard({ events }) {
   if (items.length === 0) return null;
 
   return (
-    <View style={styles.activityCard}>
-      <Text style={styles.sectionLabel}>Last Activity</Text>
-      <View style={styles.activityRow}>
+    <View style={s.activityCard}>
+      <Text style={s.sectionLabel}>Last Activity</Text>
+      <View style={s.activityRow}>
         {items.map(({ type, icon, label, color }) => (
-          <View key={type} style={styles.activityItem}>
-            <View style={[styles.activityIconBg, { backgroundColor: color + "20" }]}>
-              <Text style={styles.activityIcon}>{icon}</Text>
+          <View key={type} style={s.activityItem}>
+            <View style={[s.activityIconBg, { backgroundColor: color + "20" }]}>
+              <Text style={s.activityIcon}>{icon}</Text>
             </View>
-            <Text style={styles.activityLabel}>{label}</Text>
-            <Text style={styles.activityTime}>{timeAgo(lastByType[type])}</Text>
+            <Text style={s.activityLabel}>{label}</Text>
+            <Text style={s.activityTime}>{timeAgo(lastByType[type])}</Text>
           </View>
         ))}
       </View>
@@ -85,13 +89,27 @@ const NAV_CARDS = [
   { screen: "ManageMembers", icon: "👥", label: "Members",    color: "#E8F6F0", iconColor: "#47A67E" },
 ];
 
+// Dark-mode-friendly card colors for NAV_CARDS
+const NAV_CARDS_DARK = [
+  { screen: "Analytics",     icon: "📊", label: "Analytics",  color: "#1A2E26", iconColor: "#6BC99A" },
+  { screen: "History",       icon: "📋", label: "History",    color: "#2A2250", iconColor: "#9B7ED0" },
+  { screen: "Growth",        icon: "📏", label: "Growth",     color: "#2A1E10", iconColor: "#F5A660" },
+  { screen: "Milestones",    icon: "🎯", label: "Milestones", color: "#2A1810", iconColor: "#F4845F" },
+  { screen: "Invites",       icon: "📬", label: "Invites",    color: "#2A2250", iconColor: "#9B7ED0" },
+  { screen: "ManageMembers", icon: "👥", label: "Members",    color: "#1A2E26", iconColor: "#6BC99A" },
+];
+
 export default function Dashboard({ navigation }) {
   const { user }                                    = useAuth();
   const { activeBaby, activeBabyId, loadingBabies } = useBaby();
   const { canWriteEvents }                          = usePermissions();
   const { isActive }                                = useSleepTimer();
   const { events }                                  = useEvents(activeBabyId);
+  const { theme, isDark }                           = useTheme();
   useReminders(events, activeBaby);
+
+  const s = makeStyles(theme);
+  const navCards = isDark ? NAV_CARDS_DARK : NAV_CARDS;
 
   const [loggingOut, setLoggingOut]           = useState(false);
   const isLoggingOut                          = useRef(false);
@@ -133,33 +151,33 @@ export default function Dashboard({ navigation }) {
 
   return (
     <ScrollView
-      style={styles.scroll}
-      contentContainerStyle={styles.container}
+      style={s.scroll}
+      contentContainerStyle={s.container}
       showsVerticalScrollIndicator={false}
     >
       {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Text style={styles.greeting}>{getGreeting()}</Text>
-          <Text style={styles.userName}>{user?.displayName ?? "there"}</Text>
+      <View style={s.header}>
+        <View style={s.headerLeft}>
+          <Text style={s.greeting}>{getGreeting()}</Text>
+          <Text style={s.userName}>{user?.displayName ?? "there"}</Text>
         </View>
-        <View style={styles.headerRight}>
+        <View style={s.headerRight}>
           <TouchableOpacity
             onPress={() => navigation.navigate("Settings")}
-            style={styles.headerBtn}
+            style={s.headerBtn}
             accessibilityRole="button"
             accessibilityLabel="Settings"
           >
-            <Text style={styles.headerBtnIcon}>⚙️</Text>
+            <Text style={s.headerBtnIcon}>⚙️</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={handleLogout}
             disabled={loggingOut}
-            style={styles.headerBtn}
+            style={s.headerBtn}
           >
             {loggingOut
-              ? <ActivityIndicator size="small" color="#7B5EA7" />
-              : <Text style={styles.headerBtnIcon}>👋</Text>
+              ? <ActivityIndicator size="small" color={theme.primary} />
+              : <Text style={s.headerBtnIcon}>👋</Text>
             }
           </TouchableOpacity>
         </View>
@@ -169,24 +187,24 @@ export default function Dashboard({ navigation }) {
 
       {/* Baby card */}
       <TouchableOpacity
-        style={[styles.babyCard, !activeBaby && styles.babyCardWarning]}
+        style={[s.babyCard, !activeBaby && s.babyCardWarning]}
         onPress={() => navigation.navigate("BabySelector")}
         accessibilityRole="button"
       >
         {loadingBabies ? (
-          <ActivityIndicator color="#7B5EA7" />
+          <ActivityIndicator color={theme.primary} />
         ) : (
-          <View style={styles.babyCardInner}>
-            <Text style={styles.babyCardIcon}>{activeBaby ? "👶" : "⚠️"}</Text>
-            <View style={styles.babyCardText}>
-              <Text style={styles.babyCardName}>
+          <View style={s.babyCardInner}>
+            <Text style={s.babyCardIcon}>{activeBaby ? "👶" : "⚠️"}</Text>
+            <View style={s.babyCardText}>
+              <Text style={s.babyCardName}>
                 {activeBaby ? activeBaby.name : "No baby selected"}
               </Text>
-              <Text style={styles.babyCardSub}>
+              <Text style={s.babyCardSub}>
                 {activeBaby ? "Tap to switch or manage babies" : "Tap to add a baby"}
               </Text>
             </View>
-            <Text style={styles.babyCardChevron}>›</Text>
+            <Text style={s.babyCardChevron}>›</Text>
           </View>
         )}
       </TouchableOpacity>
@@ -195,8 +213,8 @@ export default function Dashboard({ navigation }) {
 
       {/* Read-only banner */}
       {!canWriteEvents && activeBaby ? (
-        <View style={styles.readOnlyBanner}>
-          <Text style={styles.readOnlyText}>
+        <View style={s.readOnlyBanner}>
+          <Text style={s.readOnlyText}>
             👁 Read-only access — you can view but not log events
           </Text>
         </View>
@@ -210,52 +228,52 @@ export default function Dashboard({ navigation }) {
 
       {/* Quick log */}
       {canWriteEvents && activeBaby ? (
-        <View style={styles.quickLogSection}>
-          <Text style={styles.sectionLabel}>Quick Log</Text>
-          <View style={styles.quickLogRow}>
+        <View style={s.quickLogSection}>
+          <Text style={s.sectionLabel}>Quick Log</Text>
+          <View style={s.quickLogRow}>
             <TouchableOpacity
-              style={styles.quickLogBtn}
+              style={s.quickLogBtn}
               onPress={() => navigation.navigate("Feeding")}
               accessibilityRole="button"
               accessibilityLabel="Log feeding"
             >
-              <Text style={styles.quickLogEmoji}>🍼</Text>
-              <Text style={styles.quickLogText}>Feed</Text>
+              <Text style={s.quickLogEmoji}>🍼</Text>
+              <Text style={s.quickLogText}>Feed</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.quickLogBtn}
+              style={s.quickLogBtn}
               onPress={() => handleQuickLog("poop")}
               accessibilityRole="button"
               accessibilityLabel="Quick log poop"
             >
-              <Text style={styles.quickLogEmoji}>
+              <Text style={s.quickLogEmoji}>
                 {quickLogSuccess.poop ? "✅" : "💩"}
               </Text>
-              <Text style={styles.quickLogText}>Poop</Text>
+              <Text style={s.quickLogText}>Poop</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.quickLogBtn}
+              style={s.quickLogBtn}
               onPress={() => handleQuickLog("pee")}
               accessibilityRole="button"
               accessibilityLabel="Quick log pee"
             >
-              <Text style={styles.quickLogEmoji}>
+              <Text style={s.quickLogEmoji}>
                 {quickLogSuccess.pee ? "✅" : "💧"}
               </Text>
-              <Text style={styles.quickLogText}>Pee</Text>
+              <Text style={s.quickLogText}>Pee</Text>
             </TouchableOpacity>
 
             {!isActive ? (
               <TouchableOpacity
-                style={styles.quickLogBtn}
+                style={s.quickLogBtn}
                 onPress={() => navigation.navigate("Sleep")}
                 accessibilityRole="button"
                 accessibilityLabel="Log sleep"
               >
-                <Text style={styles.quickLogEmoji}>😴</Text>
-                <Text style={styles.quickLogText}>Sleep</Text>
+                <Text style={s.quickLogEmoji}>😴</Text>
+                <Text style={s.quickLogText}>Sleep</Text>
               </TouchableOpacity>
             ) : null}
           </View>
@@ -263,18 +281,18 @@ export default function Dashboard({ navigation }) {
       ) : null}
 
       {/* Nav grid */}
-      <Text style={styles.sectionLabel}>Explore</Text>
-      <View style={styles.grid}>
-        {NAV_CARDS.map(({ screen, icon, label, color, iconColor }) => (
+      <Text style={s.sectionLabel}>Explore</Text>
+      <View style={s.grid}>
+        {navCards.map(({ screen, icon, label, color, iconColor }) => (
           <TouchableOpacity
             key={screen}
-            style={[styles.gridCard, { backgroundColor: color }]}
+            style={[s.gridCard, { backgroundColor: color }]}
             onPress={() => navigation.navigate(screen)}
             accessibilityRole="button"
             accessibilityLabel={label}
           >
-            <Text style={styles.gridIcon}>{icon}</Text>
-            <Text style={[styles.gridLabel, { color: iconColor }]}>{label}</Text>
+            <Text style={s.gridIcon}>{icon}</Text>
+            <Text style={[s.gridLabel, { color: iconColor }]}>{label}</Text>
           </TouchableOpacity>
         ))}
       </View>
@@ -284,11 +302,10 @@ export default function Dashboard({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  scroll: { flex: 1, backgroundColor: "#FBF8FF" },
+const makeStyles = (theme) => StyleSheet.create({
+  scroll: { flex: 1, backgroundColor: theme.background },
   container: { padding: 20, paddingBottom: 40 },
 
-  // Header
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -296,17 +313,17 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   headerLeft: {},
-  greeting: { fontSize: 13, color: "#A599BE", fontWeight: "500", marginBottom: 2 },
-  userName:  { fontSize: 22, fontWeight: "800", color: "#1C1830" },
+  greeting: { fontSize: 13, color: theme.textMuted, fontWeight: "500", marginBottom: 2 },
+  userName:  { fontSize: 22, fontWeight: "800", color: theme.text },
   headerRight: { flexDirection: "row", gap: 8 },
   headerBtn: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: theme.card,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#7B5EA7",
+    shadowColor: theme.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 6,
@@ -314,63 +331,56 @@ const styles = StyleSheet.create({
   },
   headerBtnIcon: { fontSize: 18 },
 
-  // Baby card
   babyCard: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: theme.card,
     borderRadius: 18,
     padding: 16,
     marginBottom: 12,
-    shadowColor: "#7B5EA7",
+    shadowColor: theme.shadow,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.1,
     shadowRadius: 10,
     elevation: 3,
   },
-  babyCardWarning: { borderWidth: 1.5, borderColor: "#E88C3A" },
+  babyCardWarning: { borderWidth: 1.5, borderColor: theme.warning },
   babyCardInner: { flexDirection: "row", alignItems: "center" },
   babyCardIcon: { fontSize: 28, marginRight: 12 },
   babyCardText: { flex: 1 },
-  babyCardName: { fontSize: 17, fontWeight: "700", color: "#1C1830" },
-  babyCardSub:  { fontSize: 12, color: "#A599BE", marginTop: 2 },
-  babyCardChevron: { fontSize: 22, color: "#C4B8D8" },
+  babyCardName: { fontSize: 17, fontWeight: "700", color: theme.text },
+  babyCardSub:  { fontSize: 12, color: theme.textMuted, marginTop: 2 },
+  babyCardChevron: { fontSize: 22, color: theme.textMuted },
 
-  // Read-only
   readOnlyBanner: {
-    backgroundColor: "#FEF3E8",
+    backgroundColor: theme.warningLight,
     borderRadius: 12,
     padding: 12,
     marginBottom: 12,
     borderLeftWidth: 3,
-    borderLeftColor: "#E88C3A",
+    borderLeftColor: theme.warning,
   },
-  readOnlyText: { fontSize: 13, color: "#E88C3A", fontWeight: "500" },
+  readOnlyText: { fontSize: 13, color: theme.warning, fontWeight: "500" },
 
-  // Section label
   sectionLabel: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#A599BE",
+    color: theme.textMuted,
     textTransform: "uppercase",
     letterSpacing: 1,
     marginBottom: 10,
   },
 
-  // Last activity
   activityCard: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: theme.card,
     borderRadius: 18,
     padding: 16,
     marginBottom: 14,
-    shadowColor: "#7B5EA7",
+    shadowColor: theme.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 2,
   },
-  activityRow: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-  },
+  activityRow: { flexDirection: "row", justifyContent: "space-around" },
   activityItem: { alignItems: "center" },
   activityIconBg: {
     width: 44,
@@ -381,23 +391,19 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
   activityIcon:  { fontSize: 22 },
-  activityLabel: { fontSize: 11, color: "#A599BE", fontWeight: "600" },
-  activityTime:  { fontSize: 12, color: "#1C1830", fontWeight: "600", marginTop: 1 },
+  activityLabel: { fontSize: 11, color: theme.textMuted, fontWeight: "600" },
+  activityTime:  { fontSize: 12, color: theme.text, fontWeight: "600", marginTop: 1 },
 
-  // Quick log
   quickLogSection: { marginBottom: 18 },
-  quickLogRow: {
-    flexDirection: "row",
-    gap: 12,
-  },
+  quickLogRow: { flexDirection: "row", gap: 12 },
   quickLogBtn: {
     flex: 1,
     aspectRatio: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: theme.card,
     borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#7B5EA7",
+    shadowColor: theme.shadow,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
@@ -405,22 +411,16 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   quickLogEmoji: { fontSize: 28 },
-  quickLogText:  { fontSize: 11, color: "#655E80", fontWeight: "600", marginTop: 4 },
+  quickLogText:  { fontSize: 11, color: theme.textSecondary, fontWeight: "600", marginTop: 4 },
 
-  // Nav grid
-  grid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 12,
-    marginBottom: 4,
-  },
+  grid: { flexDirection: "row", flexWrap: "wrap", gap: 12, marginBottom: 4 },
   gridCard: {
     width: "47%",
     borderRadius: 18,
     padding: 18,
     minHeight: 90,
     justifyContent: "space-between",
-    shadowColor: "#7B5EA7",
+    shadowColor: theme.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 6,

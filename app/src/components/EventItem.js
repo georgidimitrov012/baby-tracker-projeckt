@@ -1,5 +1,6 @@
 import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { useTheme } from "../context/ThemeContext";
 
 const EVENT_META = {
   feeding: { icon: "🍼", label: "Feeding", bg: "#FFF0EB", dot: "#F4845F" },
@@ -30,43 +31,46 @@ function formatTime(time) {
 }
 
 export default function EventItem({ item, onEdit, onDelete, loggedByName }) {
+  const { theme } = useTheme();
+  const s = makeStyles(theme);
+
   const meta   = EVENT_META[item.type] ?? { icon: "❓", label: item.type, bg: "#F5F5F5", dot: "#999" };
   const detail = formatDetail(item);
 
   return (
-    <View style={[styles.container, { backgroundColor: meta.bg }]}>
-      <View style={[styles.dotBar, { backgroundColor: meta.dot }]} />
+    <View style={[s.container, { backgroundColor: meta.bg }]}>
+      <View style={[s.dotBar, { backgroundColor: meta.dot }]} />
 
-      <View style={styles.iconWrap}>
-        <Text style={styles.icon}>{meta.icon}</Text>
+      <View style={s.iconWrap}>
+        <Text style={s.icon}>{meta.icon}</Text>
       </View>
 
-      <View style={styles.info}>
-        <Text style={styles.type}>{meta.label}</Text>
-        {detail ? <Text style={styles.detail}>{detail}</Text> : null}
-        <Text style={styles.time}>{formatTime(item.time)}</Text>
-        {item.notes ? <Text style={styles.notes}>"{item.notes}"</Text> : null}
-        {loggedByName ? <Text style={styles.loggedBy}>by {loggedByName}</Text> : null}
+      <View style={s.info}>
+        <Text style={s.type}>{meta.label}</Text>
+        {detail ? <Text style={s.detail}>{detail}</Text> : null}
+        <Text style={s.time}>{formatTime(item.time)}</Text>
+        {item.notes ? <Text style={s.notes}>"{item.notes}"</Text> : null}
+        {loggedByName ? <Text style={s.loggedBy}>by {loggedByName}</Text> : null}
       </View>
 
       {(onEdit || onDelete) ? (
-        <View style={styles.actions}>
+        <View style={s.actions}>
           {onEdit ? (
             <TouchableOpacity
               onPress={onEdit}
-              style={styles.editBtn}
+              style={s.editBtn}
               accessibilityLabel={`Edit ${meta.label} event`}
             >
-              <Text style={styles.editText}>✏️</Text>
+              <Text style={s.editText}>✏️</Text>
             </TouchableOpacity>
           ) : null}
           {onDelete ? (
             <TouchableOpacity
               onPress={onDelete}
-              style={styles.deleteBtn}
+              style={s.deleteBtn}
               accessibilityLabel={`Delete ${meta.label} event`}
             >
-              <Text style={styles.deleteText}>🗑</Text>
+              <Text style={s.deleteText}>🗑</Text>
             </TouchableOpacity>
           ) : null}
         </View>
@@ -75,14 +79,14 @@ export default function EventItem({ item, onEdit, onDelete, loggedByName }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (theme) => StyleSheet.create({
   container: {
     flexDirection: "row",
     alignItems: "center",
     borderRadius: 16,
     overflow: "hidden",
     marginBottom: 10,
-    shadowColor: "#7B5EA7",
+    shadowColor: theme.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 6,
@@ -107,27 +111,27 @@ const styles = StyleSheet.create({
   type: {
     fontSize: 15,
     fontWeight: "700",
-    color: "#1C1830",
+    color: theme.text,
   },
   detail: {
     fontSize: 13,
-    color: "#655E80",
+    color: theme.textSecondary,
     marginTop: 2,
   },
   time: {
     fontSize: 12,
-    color: "#A599BE",
+    color: theme.textMuted,
     marginTop: 3,
   },
   notes: {
     fontSize: 12,
-    color: "#655E80",
+    color: theme.textSecondary,
     fontStyle: "italic",
     marginTop: 4,
   },
   loggedBy: {
     fontSize: 11,
-    color: "#A599BE",
+    color: theme.textMuted,
     marginTop: 2,
   },
   actions: {

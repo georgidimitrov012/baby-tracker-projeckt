@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { View, ActivityIndicator, StyleSheet } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuth }        from "../context/AuthContext";
+import { useTheme }       from "../context/ThemeContext";
 import AuthNavigator      from "./AuthNavigator";
 import AppNavigator       from "./AppNavigator";
 import OnboardingScreen   from "../screens/app/OnboardingScreen";
@@ -23,6 +24,8 @@ import OnboardingScreen   from "../screens/app/OnboardingScreen";
  */
 export default function RootNavigator() {
   const { user, loading } = useAuth();
+  const { theme } = useTheme();
+  const s = makeStyles(theme);
   const [onboardingDone,      setOnboardingDone]      = useState(true);
   const [checkingOnboarding,  setCheckingOnboarding]  = useState(false);
 
@@ -49,8 +52,8 @@ export default function RootNavigator() {
 
   if (loading || checkingOnboarding) {
     return (
-      <View style={styles.splash}>
-        <ActivityIndicator size="large" color="#1565c0" />
+      <View style={s.splash}>
+        <ActivityIndicator size="large" color={theme.primary} />
       </View>
     );
   }
@@ -71,11 +74,11 @@ export default function RootNavigator() {
   return <AppNavigator />;
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (theme) => StyleSheet.create({
   splash: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#f8f9fa",
+    backgroundColor: theme.background,
   },
 });

@@ -12,8 +12,11 @@ import {
 } from "react-native";
 import { registerUser } from "../../services/authService";
 import { useBaby }      from "../../context/BabyContext";
+import { useTheme }     from "../../context/ThemeContext";
 
 export default function RegisterScreen({ navigation }) {
+  const { theme } = useTheme();
+  const s = makeStyles(theme);
   const { addBaby } = useBaby();
 
   const [displayName, setDisplayName] = useState("");
@@ -66,60 +69,60 @@ export default function RegisterScreen({ navigation }) {
 
   return (
     <KeyboardAvoidingView
-      style={styles.flex}
+      style={s.flex}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <ScrollView
-        contentContainerStyle={styles.container}
+        contentContainerStyle={s.container}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.hero}>
-          <Text style={styles.logo}>👶</Text>
-          <Text style={styles.title}>Create your account</Text>
-          <Text style={styles.tagline}>Start tracking from day one 💜</Text>
+        <View style={s.hero}>
+          <Text style={s.logo}>👶</Text>
+          <Text style={s.title}>Create your account</Text>
+          <Text style={s.tagline}>Start tracking from day one 💜</Text>
         </View>
 
         {error ? (
-          <View style={styles.errorBanner}>
-            <Text style={styles.errorText}>{error}</Text>
+          <View style={s.errorBanner}>
+            <Text style={s.errorText}>{error}</Text>
           </View>
         ) : null}
 
-        <View style={styles.form}>
+        <View style={s.form}>
 
           {/* Account fields */}
-          <Text style={styles.label}>Your Name</Text>
+          <Text style={s.label}>Your Name</Text>
           <TextInput
-            style={styles.input}
+            style={s.input}
             value={displayName}
             onChangeText={setDisplayName}
             placeholder="e.g. Sarah"
-            placeholderTextColor="#C4B8D8"
+            placeholderTextColor={theme.placeholder}
             autoComplete="name"
             returnKeyType="next"
           />
 
-          <Text style={styles.label}>Email</Text>
+          <Text style={s.label}>Email</Text>
           <TextInput
-            style={styles.input}
+            style={s.input}
             value={email}
             onChangeText={setEmail}
             placeholder="you@example.com"
-            placeholderTextColor="#C4B8D8"
+            placeholderTextColor={theme.placeholder}
             autoCapitalize="none"
             keyboardType="email-address"
             autoComplete="email"
             returnKeyType="next"
           />
 
-          <Text style={styles.label}>Password</Text>
+          <Text style={s.label}>Password</Text>
           <TextInput
-            style={styles.input}
+            style={s.input}
             value={password}
             onChangeText={setPassword}
             placeholder="At least 6 characters"
-            placeholderTextColor="#C4B8D8"
+            placeholderTextColor={theme.placeholder}
             secureTextEntry
             returnKeyType={addingBaby ? "next" : "done"}
             onSubmitEditing={addingBaby ? undefined : handleRegister}
@@ -127,7 +130,7 @@ export default function RegisterScreen({ navigation }) {
 
           {/* ── Optional baby section ──────────────────────── */}
           <TouchableOpacity
-            style={styles.toggleRow}
+            style={s.toggleRow}
             onPress={() => {
               setAddingBaby((v) => !v);
               setError(null);
@@ -135,34 +138,34 @@ export default function RegisterScreen({ navigation }) {
             accessibilityRole="checkbox"
             accessibilityState={{ checked: addingBaby }}
           >
-            <View style={[styles.checkbox, addingBaby && styles.checkboxChecked]}>
-              {addingBaby ? <Text style={styles.checkmark}>✓</Text> : null}
+            <View style={[s.checkbox, addingBaby && s.checkboxChecked]}>
+              {addingBaby ? <Text style={s.checkmark}>✓</Text> : null}
             </View>
-            <View style={styles.toggleTextBlock}>
-              <Text style={styles.toggleLabel}>Add a baby now</Text>
-              <Text style={styles.toggleSub}>
+            <View style={s.toggleTextBlock}>
+              <Text style={s.toggleLabel}>Add a baby now</Text>
+              <Text style={s.toggleSub}>
                 Skip if you were invited by another parent or are a pediatrician
               </Text>
             </View>
           </TouchableOpacity>
 
           {addingBaby ? (
-            <View style={styles.babySection}>
-              <Text style={styles.label}>Baby's Name</Text>
+            <View style={s.babySection}>
+              <Text style={s.label}>Baby's Name</Text>
               <TextInput
-                style={styles.input}
+                style={s.input}
                 value={babyName}
                 onChangeText={setBabyName}
                 placeholder="e.g. Emma"
-                placeholderTextColor="#C4B8D8"
+                placeholderTextColor={theme.placeholder}
                 returnKeyType="done"
                 onSubmitEditing={handleRegister}
                 autoFocus={false}
               />
             </View>
           ) : (
-            <View style={styles.skipNote}>
-              <Text style={styles.skipNoteText}>
+            <View style={s.skipNote}>
+              <Text style={s.skipNoteText}>
                 💡 You can add a baby later from the Dashboard, or accept an invite from another parent.
               </Text>
             </View>
@@ -170,7 +173,7 @@ export default function RegisterScreen({ navigation }) {
         </View>
 
         <TouchableOpacity
-          style={[styles.btn, loading && styles.btnDisabled]}
+          style={[s.btn, loading && s.btnDisabled]}
           onPress={handleRegister}
           disabled={loading}
           accessibilityRole="button"
@@ -178,18 +181,18 @@ export default function RegisterScreen({ navigation }) {
         >
           {loading
             ? <ActivityIndicator color="#fff" />
-            : <Text style={styles.btnText}>Create Account</Text>
+            : <Text style={s.btnText}>Create Account</Text>
           }
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.link}
+          style={s.link}
           onPress={() => navigation.navigate("Login")}
           accessibilityRole="button"
         >
-          <Text style={styles.linkText}>
+          <Text style={s.linkText}>
             Already have an account?{" "}
-            <Text style={styles.linkBold}>Sign in</Text>
+            <Text style={s.linkBold}>Sign in</Text>
           </Text>
         </TouchableOpacity>
       </ScrollView>
@@ -212,27 +215,27 @@ function friendlyError(code) {
   }
 }
 
-const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: "#FBF8FF" },
+const makeStyles = (theme) => StyleSheet.create({
+  flex: { flex: 1, backgroundColor: theme.background },
   container: { flexGrow: 1, justifyContent: "center", padding: 28 },
   hero: { alignItems: "center", marginBottom: 32 },
   logo: { fontSize: 64, marginBottom: 12 },
-  title: { fontSize: 26, fontWeight: "800", color: "#1C1830", marginBottom: 6 },
-  tagline: { fontSize: 15, color: "#A599BE", fontWeight: "500" },
+  title: { fontSize: 26, fontWeight: "800", color: theme.text, marginBottom: 6 },
+  tagline: { fontSize: 15, color: theme.textMuted, fontWeight: "500" },
   errorBanner: {
-    backgroundColor: "#FDECEC",
+    backgroundColor: theme.dangerLight,
     borderRadius: 12,
     padding: 14,
     marginBottom: 20,
     borderLeftWidth: 3,
-    borderLeftColor: "#E05252",
+    borderLeftColor: theme.danger,
   },
-  errorText: { color: "#E05252", fontSize: 14, fontWeight: "500" },
+  errorText: { color: theme.danger, fontSize: 14, fontWeight: "500" },
   form: { marginBottom: 20 },
   label: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#655E80",
+    color: theme.textSecondary,
     marginBottom: 8,
     textTransform: "uppercase",
     letterSpacing: 0.5,
@@ -240,12 +243,12 @@ const styles = StyleSheet.create({
   input: {
     height: 52,
     borderWidth: 1.5,
-    borderColor: "#EDE6FA",
+    borderColor: theme.border,
     borderRadius: 14,
     paddingHorizontal: 16,
     fontSize: 15,
-    backgroundColor: "#F7F4FE",
-    color: "#1C1830",
+    backgroundColor: theme.inputBg,
+    color: theme.inputText,
     marginBottom: 16,
   },
 
@@ -262,21 +265,21 @@ const styles = StyleSheet.create({
     height: 26,
     borderRadius: 8,
     borderWidth: 2,
-    borderColor: "#EDE6FA",
+    borderColor: theme.border,
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
-    backgroundColor: "#F7F4FE",
+    backgroundColor: theme.inputBg,
   },
-  checkboxChecked: { backgroundColor: "#7B5EA7", borderColor: "#7B5EA7" },
+  checkboxChecked: { backgroundColor: theme.primary, borderColor: theme.primary },
   checkmark: { color: "#fff", fontSize: 14, fontWeight: "800" },
   toggleTextBlock: { flex: 1 },
-  toggleLabel: { fontSize: 15, fontWeight: "600", color: "#1C1830" },
-  toggleSub: { fontSize: 12, color: "#A599BE", marginTop: 2 },
+  toggleLabel: { fontSize: 15, fontWeight: "600", color: theme.text },
+  toggleSub: { fontSize: 12, color: theme.textMuted, marginTop: 2 },
 
   // Baby section (shown when toggle is on)
   babySection: {
-    backgroundColor: "#F0EAFF",
+    backgroundColor: theme.primaryLight,
     borderRadius: 14,
     padding: 14,
     marginBottom: 4,
@@ -284,22 +287,22 @@ const styles = StyleSheet.create({
 
   // Skip note (shown when toggle is off)
   skipNote: {
-    backgroundColor: "#E8F6F0",
+    backgroundColor: theme.successLight,
     borderRadius: 14,
     padding: 14,
     marginBottom: 4,
   },
-  skipNoteText: { fontSize: 13, color: "#47A67E", lineHeight: 20 },
+  skipNoteText: { fontSize: 13, color: theme.success, lineHeight: 20 },
 
   // Submit
   btn: {
-    backgroundColor: "#F4845F",
+    backgroundColor: theme.accent,
     borderRadius: 16,
     height: 56,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 20,
-    shadowColor: "#F4845F",
+    shadowColor: theme.accent,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.35,
     shadowRadius: 12,
@@ -308,6 +311,6 @@ const styles = StyleSheet.create({
   btnDisabled: { opacity: 0.55, shadowOpacity: 0 },
   btnText: { color: "#fff", fontSize: 17, fontWeight: "800" },
   link: { alignItems: "center", padding: 8 },
-  linkText: { fontSize: 14, color: "#A599BE" },
-  linkBold: { color: "#7B5EA7", fontWeight: "700" },
+  linkText: { fontSize: 14, color: theme.textMuted },
+  linkBold: { color: theme.primary, fontWeight: "700" },
 });

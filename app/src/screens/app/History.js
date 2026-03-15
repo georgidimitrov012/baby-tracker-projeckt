@@ -12,6 +12,7 @@ import { useEvents }              from "../../hooks/useEvents";
 import { useUserDisplayNames }    from "../../hooks/useUserDisplayNames";
 import { deleteEvent }            from "../../services/eventStore";
 import { showConfirm, showAlert } from "../../utils/platform";
+import { useTheme }               from "../../context/ThemeContext";
 import EventItem                  from "../../components/EventItem";
 
 const EDITABLE_TYPES = ["feeding", "sleep", "poop", "pee"];
@@ -20,6 +21,8 @@ export default function History({ navigation }) {
   const { activeBabyId }           = useBaby();
   const { canWriteEvents }         = usePermissions();
   const { events, loading, error } = useEvents(activeBabyId);
+  const { theme }                  = useTheme();
+  const s                          = makeStyles(theme);
 
   // Resolve loggedBy UIDs to display names
   const uids = useMemo(
@@ -68,7 +71,7 @@ export default function History({ navigation }) {
 
   if (loading) {
     return (
-      <View style={styles.centered}>
+      <View style={s.centered}>
         <ActivityIndicator size="large" color="#1565c0" />
       </View>
     );
@@ -76,8 +79,8 @@ export default function History({ navigation }) {
 
   if (error) {
     return (
-      <View style={styles.centered}>
-        <Text style={styles.errorText}>
+      <View style={s.centered}>
+        <Text style={s.errorText}>
           Failed to load events. Check your connection.
         </Text>
       </View>
@@ -85,19 +88,19 @@ export default function History({ navigation }) {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[s.container, { backgroundColor: theme.background }]}>
       {!canWriteEvents ? (
-        <View style={styles.readOnlyBanner}>
-          <Text style={styles.readOnlyText}>👁 Read-only view</Text>
+        <View style={s.readOnlyBanner}>
+          <Text style={s.readOnlyText}>👁 Read-only view</Text>
         </View>
       ) : null}
 
       <FlatList
         data={events}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={s.list}
         ListEmptyComponent={
-          <Text style={styles.empty}>No events logged yet.</Text>
+          <Text style={s.empty}>No events logged yet.</Text>
         }
         renderItem={({ item }) => (
           <EventItem
@@ -116,36 +119,37 @@ export default function History({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (theme) => StyleSheet.create({
   container: { flex: 1 },
-  list: { padding: 16, paddingBottom: 40 },
+  list: { padding: 16, paddingBottom: 40, backgroundColor: theme.background },
   centered: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     padding: 32,
+    backgroundColor: theme.background,
   },
   errorText: {
-    color: "#c62828",
+    color: theme.danger,
     fontSize: 15,
     textAlign: "center",
   },
   empty: {
     textAlign: "center",
-    color: "#aaa",
+    color: theme.textMuted,
     fontSize: 15,
     marginTop: 48,
   },
   readOnlyBanner: {
-    backgroundColor: "#fff3e0",
+    backgroundColor: theme.warningLight,
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#ffe0b2",
+    borderBottomColor: theme.border,
   },
   readOnlyText: {
     fontSize: 13,
-    color: "#e65100",
+    color: theme.warning,
     fontWeight: "600",
     textAlign: "center",
   },

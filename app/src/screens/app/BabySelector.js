@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { useBaby }    from "../../context/BabyContext";
 import { showAlert }  from "../../utils/platform";
+import { useTheme }   from "../../context/ThemeContext";
 
 function computeAge(birthDate) {
   // birthDate is a Firestore Timestamp — call .toDate() on it
@@ -46,6 +47,8 @@ function computeAge(birthDate) {
 }
 
 export default function BabySelector({ navigation }) {
+  const { theme } = useTheme();
+  const s = makeStyles(theme);
   const { babies, activeBabyId, setActiveBabyId, addBaby, loadingBabies } = useBaby();
 
   const [newBabyName, setNewBabyName] = useState("");
@@ -82,22 +85,22 @@ export default function BabySelector({ navigation }) {
 
   if (loadingBabies) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#1565c0" />
+      <View style={s.centered}>
+        <ActivityIndicator size="large" color={theme.primary} />
       </View>
     );
   }
 
   return (
     <KeyboardAvoidingView
-      style={styles.flex}
+      style={s.flex}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-        <Text style={styles.sectionLabel}>Select Baby</Text>
+      <ScrollView contentContainerStyle={s.container} keyboardShouldPersistTaps="handled">
+        <Text style={s.sectionLabel}>Select Baby</Text>
 
         {babies.length === 0 ? (
-          <Text style={styles.empty}>No babies yet — add one below.</Text>
+          <Text style={s.empty}>No babies yet — add one below.</Text>
         ) : (
           babies.map((baby) => {
             const isActive = baby.id === activeBabyId;
@@ -105,51 +108,51 @@ export default function BabySelector({ navigation }) {
             return (
               <TouchableOpacity
                 key={baby.id}
-                style={[styles.babyRow, isActive && styles.babyRowActive]}
+                style={[s.babyRow, isActive && s.babyRowActive]}
                 onPress={() => handleSelect(baby.id)}
                 accessibilityRole="button"
                 accessibilityLabel={`Select ${baby.name}`}
               >
                 {baby.photoURL
-                  ? <Image source={{ uri: baby.photoURL }} style={styles.babyPhoto} />
-                  : <Text style={styles.babyIcon}>👶</Text>
+                  ? <Image source={{ uri: baby.photoURL }} style={s.babyPhoto} />
+                  : <Text style={s.babyIcon}>👶</Text>
                 }
-                <View style={styles.babyInfo}>
-                  <Text style={[styles.babyName, isActive && styles.babyNameActive]}>
+                <View style={s.babyInfo}>
+                  <Text style={[s.babyName, isActive && s.babyNameActive]}>
                     {baby.name}
                   </Text>
                   {age ? (
-                    <Text style={styles.babyAge}>{age}</Text>
+                    <Text style={s.babyAge}>{age}</Text>
                   ) : null}
                 </View>
-                {isActive ? <Text style={styles.check}>✓</Text> : null}
+                {isActive ? <Text style={s.check}>✓</Text> : null}
                 <TouchableOpacity
-                  style={styles.editBtn}
+                  style={s.editBtn}
                   onPress={() => navigation.navigate("BabyProfile", { babyId: baby.id })}
                   accessibilityRole="button"
                   accessibilityLabel={`Edit ${baby.name}`}
                 >
-                  <Text style={styles.editBtnText}>✏️ Edit</Text>
+                  <Text style={s.editBtnText}>✏️ Edit</Text>
                 </TouchableOpacity>
               </TouchableOpacity>
             );
           })
         )}
 
-        <Text style={[styles.sectionLabel, { marginTop: 32 }]}>Add a Baby</Text>
+        <Text style={[s.sectionLabel, { marginTop: 32 }]}>Add a Baby</Text>
 
         <TextInput
-          style={styles.input}
+          style={s.input}
           value={newBabyName}
           onChangeText={setNewBabyName}
           placeholder="Baby's name"
-          placeholderTextColor="#bbb"
+          placeholderTextColor={theme.placeholder}
           returnKeyType="done"
           onSubmitEditing={handleAdd}
         />
 
         <TouchableOpacity
-          style={[styles.btn, adding && styles.btnDisabled]}
+          style={[s.btn, adding && s.btnDisabled]}
           onPress={handleAdd}
           disabled={adding}
           accessibilityRole="button"
@@ -157,7 +160,7 @@ export default function BabySelector({ navigation }) {
         >
           {adding
             ? <ActivityIndicator color="#fff" />
-            : <Text style={styles.btnText}>Add Baby</Text>
+            : <Text style={s.btnText}>Add Baby</Text>
           }
         </TouchableOpacity>
       </ScrollView>
@@ -165,47 +168,49 @@ export default function BabySelector({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  flex: { flex: 1 },
+const makeStyles = (theme) => StyleSheet.create({
+  flex: { flex: 1, backgroundColor: theme.background },
   container: {
     padding: 24,
+    backgroundColor: theme.background,
   },
   centered: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: theme.background,
   },
   sectionLabel: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#888",
+    color: theme.textMuted,
     textTransform: "uppercase",
     letterSpacing: 0.8,
     marginBottom: 12,
   },
   empty: {
     fontSize: 14,
-    color: "#aaa",
+    color: theme.textMuted,
     marginBottom: 8,
   },
   babyRow: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
+    backgroundColor: theme.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 10,
     borderWidth: 2,
     borderColor: "transparent",
     elevation: 1,
-    shadowColor: "#000",
+    shadowColor: theme.shadow,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.06,
     shadowRadius: 2,
   },
   babyRowActive: {
-    borderColor: "#1565c0",
-    backgroundColor: "#e3f2fd",
+    borderColor: theme.primary,
+    backgroundColor: theme.primaryLight,
   },
   babyIcon: {
     fontSize: 22,
@@ -223,46 +228,46 @@ const styles = StyleSheet.create({
   babyName: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#1a1a2e",
+    color: theme.text,
   },
   babyNameActive: {
-    color: "#1565c0",
+    color: theme.primary,
   },
   babyAge: {
     fontSize: 12,
-    color: "#888",
+    color: theme.textMuted,
     marginTop: 2,
   },
   check: {
     fontSize: 16,
-    color: "#1565c0",
+    color: theme.primary,
     fontWeight: "700",
     marginRight: 8,
   },
   editBtn: {
     paddingVertical: 5,
     paddingHorizontal: 10,
-    backgroundColor: "rgba(21,101,192,0.1)",
+    backgroundColor: "rgba(123,94,167,0.1)",
     borderRadius: 8,
   },
   editBtnText: {
     fontSize: 12,
-    color: "#1565c0",
+    color: theme.primary,
     fontWeight: "600",
   },
   input: {
     height: 48,
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: theme.border,
     borderRadius: 10,
     paddingHorizontal: 14,
     fontSize: 15,
-    backgroundColor: "#fff",
-    color: "#111",
+    backgroundColor: theme.inputBg,
+    color: theme.inputText,
     marginBottom: 14,
   },
   btn: {
-    backgroundColor: "#1565c0",
+    backgroundColor: theme.primary,
     borderRadius: 12,
     padding: 14,
     alignItems: "center",

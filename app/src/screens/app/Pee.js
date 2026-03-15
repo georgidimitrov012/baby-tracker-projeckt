@@ -16,11 +16,14 @@ import { usePermissions }  from "../../hooks/usePermissions";
 import { addEvent }        from "../../services/eventStore";
 import { notifyCoParents } from "../../services/notificationService";
 import { showAlert }       from "../../utils/platform";
+import { useTheme }        from "../../context/ThemeContext";
 
 export default function Pee({ navigation }) {
   const { user }                     = useAuth();
   const { activeBabyId, activeBaby } = useBaby();
   const { canWriteEvents }           = usePermissions();
+  const { theme }                    = useTheme();
+  const s                            = makeStyles(theme);
 
   const [notes, setNotes]   = useState("");
   const [saving, setSaving] = useState(false);
@@ -59,22 +62,22 @@ export default function Pee({ navigation }) {
 
   return (
     <KeyboardAvoidingView
-      style={styles.flex}
+      style={s.flex}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <ScrollView
-        contentContainerStyle={styles.container}
+        contentContainerStyle={s.container}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={styles.emoji}>💧</Text>
-        <Text style={styles.title}>Log a Pee</Text>
+        <Text style={s.emoji}>💧</Text>
+        <Text style={s.title}>Log a Pee</Text>
 
         <TextInput
-          style={styles.notesInput}
+          style={s.notesInput}
           value={notes}
           onChangeText={setNotes}
           placeholder="Notes (optional)"
-          placeholderTextColor="#bbb"
+          placeholderTextColor={theme.placeholder}
           multiline
           numberOfLines={3}
           keyboardType="default"
@@ -82,7 +85,7 @@ export default function Pee({ navigation }) {
         />
 
         <TouchableOpacity
-          style={[styles.btn, (saving || !canWriteEvents) && styles.btnDisabled]}
+          style={[s.btn, (saving || !canWriteEvents) && s.btnDisabled]}
           onPress={handleSave}
           disabled={saving || !canWriteEvents}
           accessibilityRole="button"
@@ -90,12 +93,12 @@ export default function Pee({ navigation }) {
         >
           {saving
             ? <ActivityIndicator color="#fff" />
-            : <Text style={styles.btnText}>Confirm 💧</Text>
+            : <Text style={s.btnText}>Confirm 💧</Text>
           }
         </TouchableOpacity>
 
         {!canWriteEvents ? (
-          <Text style={styles.readOnlyNote}>
+          <Text style={s.readOnlyNote}>
             You have read-only access and cannot log events.
           </Text>
         ) : null}
@@ -104,30 +107,31 @@ export default function Pee({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  flex: { flex: 1 },
+const makeStyles = (theme) => StyleSheet.create({
+  flex: { flex: 1, backgroundColor: theme.background },
   container: {
     flex: 1,
     padding: 24,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: theme.background,
   },
   emoji: { fontSize: 64, marginBottom: 12 },
   title: {
     fontSize: 24,
     fontWeight: "700",
-    color: "#1a1a2e",
+    color: theme.text,
     marginBottom: 24,
   },
   notesInput: {
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: theme.border,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 10,
     fontSize: 15,
-    backgroundColor: "#fff",
-    color: "#111",
+    backgroundColor: theme.inputBg,
+    color: theme.inputText,
     minHeight: 80,
     marginBottom: 24,
     textAlignVertical: "top",
@@ -135,7 +139,7 @@ const styles = StyleSheet.create({
     maxWidth: 400,
   },
   btn: {
-    backgroundColor: "#00695c",
+    backgroundColor: theme.accent,
     borderRadius: 14,
     paddingVertical: 18,
     paddingHorizontal: 48,
@@ -151,7 +155,7 @@ const styles = StyleSheet.create({
   },
   readOnlyNote: {
     textAlign: "center",
-    color: "#e65100",
+    color: theme.warning,
     fontSize: 13,
     marginTop: 24,
   },

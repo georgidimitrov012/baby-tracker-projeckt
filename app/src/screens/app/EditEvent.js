@@ -16,6 +16,7 @@ import { updateEvent }                                       from "../../service
 import { validateAmount, validateDuration, validateFeedingDuration } from "../../utils/validation";
 import { showAlert }                                         from "../../utils/platform";
 import FormInput                                             from "../../components/FormInput";
+import { useTheme }                                          from "../../context/ThemeContext";
 
 const SLEEP_TYPE_LABELS = { nap: "💤 Nap", night: "🌙 Night" };
 const FEEDING_TYPE_LABELS = { breast: "🤱 Breast", bottle: "🍼 Bottle", formula: "🥛 Formula" };
@@ -23,6 +24,8 @@ const FEEDING_TYPE_LABELS = { breast: "🤱 Breast", bottle: "🍼 Bottle", form
 export default function EditEvent({ route, navigation }) {
   const { activeBabyId }   = useBaby();
   const { canWriteEvents } = usePermissions();
+  const { theme }          = useTheme();
+  const s                  = makeStyles(theme);
 
   const {
     eventId,
@@ -102,31 +105,31 @@ export default function EditEvent({ route, navigation }) {
 
   return (
     <KeyboardAvoidingView
-      style={styles.flex}
+      style={s.flex}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <ScrollView
-        contentContainerStyle={styles.container}
+        contentContainerStyle={s.container}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={styles.heading}>
+        <Text style={s.heading}>
           Edit {icon}{" "}
-          <Text style={styles.typeLabel}>
+          <Text style={s.typeLabel}>
             {type.charAt(0).toUpperCase() + type.slice(1)}
           </Text>
         </Text>
 
         {/* Show feeding/sleep type as a read-only badge */}
         {isFeeding && initFeedingType ? (
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>
+          <View style={s.badge}>
+            <Text style={s.badgeText}>
               {FEEDING_TYPE_LABELS[initFeedingType] ?? initFeedingType}
             </Text>
           </View>
         ) : null}
         {isSleep && initSleepType ? (
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>
+          <View style={s.badge}>
+            <Text style={s.badgeText}>
               {SLEEP_TYPE_LABELS[initSleepType] ?? initSleepType}
             </Text>
           </View>
@@ -148,13 +151,13 @@ export default function EditEvent({ route, navigation }) {
           />
         ) : null}
 
-        <Text style={styles.notesLabel}>Notes (optional)</Text>
+        <Text style={s.notesLabel}>Notes (optional)</Text>
         <TextInput
-          style={[styles.notesInput, !canWriteEvents && styles.notesInputDisabled]}
+          style={[s.notesInput, !canWriteEvents && s.notesInputDisabled]}
           value={notes}
           onChangeText={setNotes}
           placeholder="Notes (optional)"
-          placeholderTextColor="#bbb"
+          placeholderTextColor={theme.placeholder}
           multiline
           numberOfLines={3}
           keyboardType="default"
@@ -163,7 +166,7 @@ export default function EditEvent({ route, navigation }) {
         />
 
         <TouchableOpacity
-          style={[styles.btn, (saving || !canWriteEvents) && styles.btnDisabled]}
+          style={[s.btn, (saving || !canWriteEvents) && s.btnDisabled]}
           onPress={handleSave}
           disabled={saving || !canWriteEvents}
           accessibilityRole="button"
@@ -171,12 +174,12 @@ export default function EditEvent({ route, navigation }) {
         >
           {saving
             ? <ActivityIndicator color="#fff" />
-            : <Text style={styles.btnText}>Save Changes</Text>
+            : <Text style={s.btnText}>Save Changes</Text>
           }
         </TouchableOpacity>
 
         {!canWriteEvents ? (
-          <Text style={styles.readOnlyNote}>
+          <Text style={s.readOnlyNote}>
             You have read-only access and cannot edit events.
           </Text>
         ) : null}
@@ -185,26 +188,27 @@ export default function EditEvent({ route, navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  flex: { flex: 1 },
+const makeStyles = (theme) => StyleSheet.create({
+  flex: { flex: 1, backgroundColor: theme.background },
   container: {
     flex: 1,
     padding: 24,
     justifyContent: "center",
+    backgroundColor: theme.background,
   },
   heading: {
     fontSize: 20,
-    color: "#666",
+    color: theme.textSecondary,
     textAlign: "center",
     marginBottom: 8,
   },
   typeLabel: {
     fontWeight: "700",
-    color: "#1a1a2e",
+    color: theme.text,
   },
   badge: {
     alignSelf: "center",
-    backgroundColor: "#e3f2fd",
+    backgroundColor: theme.primaryLight,
     borderRadius: 20,
     paddingHorizontal: 14,
     paddingVertical: 5,
@@ -213,34 +217,34 @@ const styles = StyleSheet.create({
   badgeText: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#1565c0",
+    color: theme.primary,
   },
   notesLabel: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#555",
+    color: theme.textSecondary,
     marginBottom: 6,
     marginTop: 4,
   },
   notesInput: {
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: theme.border,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 10,
     fontSize: 15,
-    backgroundColor: "#fff",
-    color: "#111",
+    backgroundColor: theme.inputBg,
+    color: theme.inputText,
     minHeight: 80,
     marginBottom: 16,
     textAlignVertical: "top",
   },
   notesInputDisabled: {
-    backgroundColor: "#f5f5f5",
-    color: "#aaa",
+    backgroundColor: theme.background,
+    color: theme.textMuted,
   },
   btn: {
-    backgroundColor: "#2e7d32",
+    backgroundColor: theme.success,
     borderRadius: 12,
     padding: 16,
     alignItems: "center",
@@ -254,7 +258,7 @@ const styles = StyleSheet.create({
   },
   readOnlyNote: {
     textAlign: "center",
-    color: "#e65100",
+    color: theme.warning,
     fontSize: 13,
     marginTop: 16,
   },

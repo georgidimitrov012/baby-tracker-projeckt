@@ -1,5 +1,6 @@
 import React from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { useTheme } from "../context/ThemeContext";
 import InviteParentScreen  from "../screens/app/InviteParentScreen";
 import InvitesScreen       from "../screens/app/InvitesScreen";
 import ManageMembersScreen from "../screens/app/ManageMembersScreen";
@@ -25,14 +26,16 @@ const Stack = createNativeStackNavigator();
  * It is only rendered when user !== null in RootNavigator.
  */
 export default function AppNavigator() {
+  const { theme } = useTheme();
+
   return (
     <Stack.Navigator
       screenOptions={{
-        headerStyle:      { backgroundColor: "#FFFFFF" },
-        headerTintColor:  "#7B5EA7",
-        headerTitleStyle: { fontWeight: "700", color: "#1C1830", fontSize: 18 },
+        headerStyle:         { backgroundColor: theme.headerBg },
+        headerTintColor:     theme.primary,
+        headerTitleStyle:    { fontWeight: "700", color: theme.headerText, fontSize: 18 },
         headerShadowVisible: false,
-        contentStyle:     { backgroundColor: "#FBF8FF" },
+        contentStyle:        { backgroundColor: theme.background },
       }}
     >
       <Stack.Screen

@@ -11,8 +11,12 @@ import {
   ScrollView,
 } from "react-native";
 import { loginUser } from "../../services/authService";
+import { useTheme } from "../../context/ThemeContext";
 
 export default function LoginScreen({ navigation }) {
+  const { theme } = useTheme();
+  const s = makeStyles(theme);
+
   const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");
   const [error, setError]       = useState(null);
@@ -45,47 +49,47 @@ export default function LoginScreen({ navigation }) {
 
   return (
     <KeyboardAvoidingView
-      style={styles.flex}
+      style={s.flex}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <ScrollView
-        contentContainerStyle={styles.container}
+        contentContainerStyle={s.container}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.hero}>
-          <Text style={styles.logo}>👶</Text>
-          <Text style={styles.title}>Welcome back</Text>
-          <Text style={styles.tagline}>Caring made simpler 💜</Text>
+        <View style={s.hero}>
+          <Text style={s.logo}>👶</Text>
+          <Text style={s.title}>Welcome back</Text>
+          <Text style={s.tagline}>Caring made simpler 💜</Text>
         </View>
 
         {error ? (
-          <View style={styles.errorBanner}>
-            <Text style={styles.errorText}>{error}</Text>
+          <View style={s.errorBanner}>
+            <Text style={s.errorText}>{error}</Text>
           </View>
         ) : null}
 
-        <View style={styles.form}>
-          <Text style={styles.label}>Email</Text>
+        <View style={s.form}>
+          <Text style={s.label}>Email</Text>
           <TextInput
-            style={styles.input}
+            style={s.input}
             value={email}
             onChangeText={setEmail}
             placeholder="you@example.com"
-            placeholderTextColor="#C4B8D8"
+            placeholderTextColor={theme.placeholder}
             autoCapitalize="none"
             keyboardType="email-address"
             autoComplete="email"
             returnKeyType="next"
           />
 
-          <Text style={styles.label}>Password</Text>
+          <Text style={s.label}>Password</Text>
           <TextInput
-            style={styles.input}
+            style={s.input}
             value={password}
             onChangeText={setPassword}
             placeholder="••••••••"
-            placeholderTextColor="#C4B8D8"
+            placeholderTextColor={theme.placeholder}
             secureTextEntry
             autoComplete="password"
             returnKeyType="done"
@@ -94,7 +98,7 @@ export default function LoginScreen({ navigation }) {
         </View>
 
         <TouchableOpacity
-          style={[styles.btn, loading && styles.btnDisabled]}
+          style={[s.btn, loading && s.btnDisabled]}
           onPress={handleLogin}
           disabled={loading}
           accessibilityRole="button"
@@ -102,18 +106,18 @@ export default function LoginScreen({ navigation }) {
         >
           {loading
             ? <ActivityIndicator color="#fff" />
-            : <Text style={styles.btnText}>Sign In</Text>
+            : <Text style={s.btnText}>Sign In</Text>
           }
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.link}
+          style={s.link}
           onPress={() => navigation.navigate("Register")}
           accessibilityRole="button"
         >
-          <Text style={styles.linkText}>
+          <Text style={s.linkText}>
             Don't have an account?{" "}
-            <Text style={styles.linkBold}>Create one</Text>
+            <Text style={s.linkBold}>Create one</Text>
           </Text>
         </TouchableOpacity>
       </ScrollView>
@@ -140,8 +144,8 @@ function friendlyError(code) {
   }
 }
 
-const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: "#FBF8FF" },
+const makeStyles = (theme) => StyleSheet.create({
+  flex: { flex: 1, backgroundColor: theme.background },
   container: {
     flexGrow: 1,
     justifyContent: "center",
@@ -158,24 +162,24 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: "800",
-    color: "#1C1830",
+    color: theme.text,
     marginBottom: 6,
   },
   tagline: {
     fontSize: 15,
-    color: "#A599BE",
+    color: theme.textMuted,
     fontWeight: "500",
   },
   errorBanner: {
-    backgroundColor: "#FDECEC",
+    backgroundColor: theme.dangerLight,
     borderRadius: 12,
     padding: 14,
     marginBottom: 20,
     borderLeftWidth: 3,
-    borderLeftColor: "#E05252",
+    borderLeftColor: theme.danger,
   },
   errorText: {
-    color: "#E05252",
+    color: theme.danger,
     fontSize: 14,
     fontWeight: "500",
   },
@@ -183,7 +187,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#655E80",
+    color: theme.textSecondary,
     marginBottom: 8,
     textTransform: "uppercase",
     letterSpacing: 0.5,
@@ -191,22 +195,22 @@ const styles = StyleSheet.create({
   input: {
     height: 52,
     borderWidth: 1.5,
-    borderColor: "#EDE6FA",
+    borderColor: theme.border,
     borderRadius: 14,
     paddingHorizontal: 16,
     fontSize: 15,
-    backgroundColor: "#F7F4FE",
-    color: "#1C1830",
+    backgroundColor: theme.inputBg,
+    color: theme.inputText,
     marginBottom: 16,
   },
   btn: {
-    backgroundColor: "#F4845F",
+    backgroundColor: theme.accent,
     borderRadius: 16,
     height: 56,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 20,
-    shadowColor: "#F4845F",
+    shadowColor: theme.accent,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.35,
     shadowRadius: 12,
@@ -219,6 +223,6 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
   link: { alignItems: "center", padding: 8 },
-  linkText: { fontSize: 14, color: "#A599BE" },
-  linkBold: { color: "#7B5EA7", fontWeight: "700" },
+  linkText: { fontSize: 14, color: theme.textMuted },
+  linkBold: { color: theme.primary, fontWeight: "700" },
 });
