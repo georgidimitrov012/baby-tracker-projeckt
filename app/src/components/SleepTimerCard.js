@@ -8,18 +8,10 @@ import {
 } from "react-native";
 import { useSleepTimer, formatElapsed } from "../hooks/useSleepTimer";
 import { usePermissions }               from "../hooks/usePermissions";
+import { useTheme }                     from "../context/ThemeContext";
 
-/**
- * SleepTimerCard
- *
- * Shows:
- *  - When ACTIVE:  live elapsed time, start time, sleep type badge, stop button (if permitted)
- *  - When INACTIVE: nap/night picker + start button (if permitted)
- *
- * Props:
- *   compact {boolean} - smaller layout for Dashboard
- */
 export default function SleepTimerCard({ compact = false }) {
+  const { theme } = useTheme();
   const {
     isActive,
     elapsedSeconds,
@@ -39,29 +31,28 @@ export default function SleepTimerCard({ compact = false }) {
 
   if (!isActive && !canWriteEvents) return null;
 
-  return (
-    <View style={[styles.card, isActive && styles.cardActive, compact && styles.cardCompact]}>
+  const s = makeStyles(theme, compact);
 
+  return (
+    <View style={s.card}>
       {isActive ? (
         <>
-          <View style={styles.row}>
-            <View style={styles.pulse} />
-            <Text style={[styles.label, compact && styles.labelSmall]}>
-              Baby is sleeping
-            </Text>
+          <View style={s.activeHeader}>
+            <View style={s.pulseOuter}>
+              <View style={s.pulseInner} />
+            </View>
+            <Text style={s.activeLabel}>Baby is sleeping</Text>
           </View>
 
-          <Text style={[styles.timer, compact && styles.timerSmall]}>
-            {formatElapsed(elapsedSeconds)}
-          </Text>
+          <Text style={s.timer}>{formatElapsed(elapsedSeconds)}</Text>
 
           {startTimeStr ? (
-            <Text style={styles.startedAt}>Started at {startTimeStr}</Text>
+            <Text style={s.startedAt}>Started at {startTimeStr}</Text>
           ) : null}
 
           {canWriteEvents ? (
             <TouchableOpacity
-              style={[styles.btn, styles.stopBtn, stopping && styles.btnDisabled]}
+              style={[s.btn, s.stopBtn, stopping && s.btnDisabled]}
               onPress={handleStop}
               disabled={stopping}
               accessibilityRole="button"
@@ -69,42 +60,38 @@ export default function SleepTimerCard({ compact = false }) {
             >
               {stopping
                 ? <ActivityIndicator color="#fff" size="small" />
-                : <Text style={styles.btnText}>⏹  Stop Sleep</Text>
+                : <Text style={s.btnText}>⏹  Stop Sleep</Text>
               }
             </TouchableOpacity>
           ) : (
-            <Text style={styles.readOnlyNote}>Read-only — cannot stop timer</Text>
+            <Text style={s.readOnlyNote}>Read-only — cannot stop timer</Text>
           )}
         </>
       ) : (
         <>
-          <Text style={[styles.label, styles.labelInactive, compact && styles.labelSmall]}>
-            😴 Sleep Tracker
-          </Text>
+          <Text style={s.inactiveLabel}>😴 Sleep Tracker</Text>
           {!compact ? (
-            <Text style={styles.hint}>
-              Select type and tap Start when your baby falls asleep.
-            </Text>
+            <Text style={s.hint}>Tap Start when your baby falls asleep.</Text>
           ) : null}
           {canWriteEvents ? (
             <>
-              <View style={styles.typeRow}>
+              <View style={s.typeRow}>
                 {["nap", "night"].map((t) => (
                   <TouchableOpacity
                     key={t}
-                    style={[styles.typeBtn, sleepType === t && styles.typeBtnActive]}
+                    style={[s.typeBtn, sleepType === t && s.typeBtnActive]}
                     onPress={() => setSleepType(t)}
                     accessibilityRole="button"
                     accessibilityLabel={t === "nap" ? "Nap" : "Night sleep"}
                   >
-                    <Text style={[styles.typeBtnText, sleepType === t && styles.typeBtnTextActive]}>
+                    <Text style={[s.typeBtnText, sleepType === t && s.typeBtnTextActive]}>
                       {t === "nap" ? "💤 Nap" : "🌙 Night"}
                     </Text>
                   </TouchableOpacity>
                 ))}
               </View>
               <TouchableOpacity
-                style={[styles.btn, styles.startBtn, starting && styles.btnDisabled]}
+                style={[s.btn, s.startBtn, starting && s.btnDisabled]}
                 onPress={() => handleStart(sleepType)}
                 disabled={starting}
                 accessibilityRole="button"
@@ -112,7 +99,7 @@ export default function SleepTimerCard({ compact = false }) {
               >
                 {starting
                   ? <ActivityIndicator color="#fff" size="small" />
-                  : <Text style={styles.btnText}>▶  Start Sleep</Text>
+                  : <Text style={s.btnText}>▶  Start Sleep</Text>
                 }
               </TouchableOpacity>
             </>
@@ -123,60 +110,62 @@ export default function SleepTimerCard({ compact = false }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (theme, compact) => StyleSheet.create({
   card: {
-    backgroundColor: "#f3e5f5",
-    borderRadius:    16,
-    padding:         20,
-    marginBottom:    16,
-    gap:             10,
+    backgroundColor: theme.dark ? "#2A2250" : "#7B5EA7",
+    borderRadius: 20,
+    padding: compact ? 16 : 22,
+    marginBottom: 14,
+    gap: 10,
+    shadowColor: "#7B5EA7",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: theme.dark ? 0.4 : 0.25,
+    shadowRadius: 12,
+    elevation: 4,
   },
-  cardActive: {
-    backgroundColor: "#1a237e",
-  },
-  cardCompact: {
-    padding:      14,
-    marginBottom: 12,
-  },
-  row: {
+  activeHeader: {
     flexDirection: "row",
-    alignItems:    "center",
-    gap:           8,
+    alignItems: "center",
+    gap: 10,
   },
-  pulse: {
-    width:           10,
-    height:          10,
-    borderRadius:    5,
-    backgroundColor: "#69f0ae",
+  pulseOuter: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: "rgba(110,255,180,0.25)",
+    alignItems: "center",
+    justifyContent: "center",
   },
-  label: {
-    fontSize:   16,
+  pulseInner: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: "#6EFBB4",
+  },
+  activeLabel: {
+    fontSize: compact ? 14 : 16,
     fontWeight: "700",
-    color:      "#fff",
-  },
-  labelInactive: {
-    color: "#6a1b9a",
-  },
-  labelSmall: {
-    fontSize: 14,
+    color: "#FFFFFF",
   },
   timer: {
-    fontSize:          42,
-    fontWeight:        "800",
-    color:             "#fff",
-    letterSpacing:     2,
-    fontVariant:       ["tabular-nums"],
-  },
-  timerSmall: {
-    fontSize: 28,
+    fontSize: compact ? 32 : 48,
+    fontWeight: "800",
+    color: "#FFFFFF",
+    letterSpacing: 2,
+    fontVariant: ["tabular-nums"],
   },
   startedAt: {
     fontSize: 13,
-    color:    "#b39ddb",
+    color: "rgba(255,255,255,0.65)",
+  },
+  inactiveLabel: {
+    fontSize: compact ? 14 : 16,
+    fontWeight: "700",
+    color: "#FFFFFF",
   },
   hint: {
     fontSize: 13,
-    color:    "#6a1b9a",
+    color: "rgba(255,255,255,0.75)",
   },
   typeRow: {
     flexDirection: "row",
@@ -184,43 +173,42 @@ const styles = StyleSheet.create({
   },
   typeBtn: {
     flex: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-    backgroundColor: "rgba(106,27,154,0.1)",
+    paddingVertical: 9,
+    borderRadius: 12,
+    backgroundColor: "rgba(255,255,255,0.15)",
     alignItems: "center",
-    borderWidth: 2,
+    borderWidth: 1.5,
     borderColor: "transparent",
   },
   typeBtnActive: {
-    backgroundColor: "#ede7f6",
-    borderColor: "#6a1b9a",
+    backgroundColor: "rgba(255,255,255,0.25)",
+    borderColor: "rgba(255,255,255,0.6)",
   },
   typeBtnText: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#6a1b9a",
+    color: "rgba(255,255,255,0.8)",
   },
   typeBtnTextActive: {
-    color: "#4527a0",
+    color: "#FFFFFF",
   },
   btn: {
-    borderRadius:   12,
-    paddingVertical: 12,
-    alignItems:      "center",
-    marginTop:       4,
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: "center",
+    marginTop: 2,
   },
-  startBtn: { backgroundColor: "#6a1b9a" },
-  stopBtn:  { backgroundColor: "#c62828" },
+  startBtn: { backgroundColor: "rgba(255,255,255,0.2)", borderWidth: 1.5, borderColor: "rgba(255,255,255,0.5)" },
+  stopBtn:  { backgroundColor: "#E05252" },
   btnDisabled: { opacity: 0.5 },
   btnText: {
-    color:      "#fff",
-    fontSize:   15,
+    color: "#fff",
+    fontSize: 15,
     fontWeight: "700",
   },
   readOnlyNote: {
     fontSize: 12,
-    color:    "#9fa8da",
-    textAlign:"center",
+    color: "rgba(255,255,255,0.6)",
+    textAlign: "center",
   },
 });

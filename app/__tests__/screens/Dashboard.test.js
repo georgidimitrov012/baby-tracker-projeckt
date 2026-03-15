@@ -57,7 +57,8 @@ describe('Dashboard — rendering', () => {
 
   it('shows the user greeting', () => {
     const { getByText } = render(<Dashboard navigation={mockNav} />);
-    expect(getByText(/Hello, Alice/)).toBeTruthy();
+    // Greeting is now split: time-aware line + display name on separate lines
+    expect(getByText('Alice')).toBeTruthy();
   });
 
   it('shows baby name when a baby is active', () => {
@@ -73,15 +74,15 @@ describe('Dashboard — rendering', () => {
 });
 
 describe('Dashboard — permissions', () => {
-  it('shows Log Feeding button when user can write', () => {
-    const { getByText } = render(<Dashboard navigation={mockNav} />);
-    expect(getByText('Log Feeding')).toBeTruthy();
+  it('shows Feed quick-log button when user can write', () => {
+    const { getByLabelText } = render(<Dashboard navigation={mockNav} />);
+    expect(getByLabelText('Log feeding')).toBeTruthy();
   });
 
-  it('hides Log Feeding button for read-only users', () => {
+  it('hides quick-log buttons for read-only users', () => {
     usePermissions.mockReturnValueOnce({ canWriteEvents: false });
-    const { queryByText } = render(<Dashboard navigation={mockNav} />);
-    expect(queryByText('Log Feeding')).toBeNull();
+    const { queryByLabelText } = render(<Dashboard navigation={mockNav} />);
+    expect(queryByLabelText('Log feeding')).toBeNull();
   });
 
   it('shows read-only banner for viewers', () => {
@@ -104,9 +105,9 @@ describe('Dashboard — navigation', () => {
     expect(mockNav.navigate).toHaveBeenCalledWith('Settings');
   });
 
-  it('navigates to Feeding on Log Feeding press', () => {
-    const { getByText } = render(<Dashboard navigation={mockNav} />);
-    fireEvent.press(getByText('Log Feeding'));
+  it('navigates to Feeding on Feed button press', () => {
+    const { getByLabelText } = render(<Dashboard navigation={mockNav} />);
+    fireEvent.press(getByLabelText('Log feeding'));
     expect(mockNav.navigate).toHaveBeenCalledWith('Feeding');
   });
 });

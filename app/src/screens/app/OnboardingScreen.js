@@ -88,7 +88,7 @@ export default function OnboardingScreen({ onComplete }) {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#f8f9fa" },
+  safe: { flex: 1, backgroundColor: "#FBF8FF" },
   container: {
     flex: 1,
     justifyContent: "center",
@@ -107,16 +107,16 @@ const styles = StyleSheet.create({
     backgroundColor: "#ddd",
   },
   dotActive: {
-    backgroundColor: "#1565c0",
+    backgroundColor: "#7B5EA7",
     width: 24,
   },
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: "#FFFFFF",
     borderRadius: 20,
     padding: 32,
     width: "100%",
     alignItems: "center",
-    shadowColor: "#000",
+    shadowColor: "#7B5EA7",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 8,
@@ -127,13 +127,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 22,
     fontWeight: "800",
-    color: "#1a1a2e",
+    color: "#1C1830",
     textAlign: "center",
     marginBottom: 12,
   },
   body: {
     fontSize: 15,
-    color: "#555",
+    color: "#655E80",
     textAlign: "center",
     lineHeight: 22,
   },
@@ -144,17 +144,23 @@ const styles = StyleSheet.create({
   },
   bullet: {
     fontSize: 15,
-    color: "#333",
+    color: "#655E80",
     marginBottom: 10,
     lineHeight: 22,
   },
   btn: {
-    backgroundColor: "#1565c0",
-    borderRadius: 14,
-    paddingVertical: 16,
+    backgroundColor: "#F4845F",
+    borderRadius: 16,
+    height: 56,
     paddingHorizontal: 40,
     width: "100%",
     alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#F4845F",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 5,
   },
   btnText: {
     color: "#fff",

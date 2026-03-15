@@ -72,12 +72,19 @@ export default function RegisterScreen({ navigation }) {
       <ScrollView
         contentContainerStyle={styles.container}
         keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.logo}>👶</Text>
-        <Text style={styles.title}>Create your account</Text>
-        <Text style={styles.sub}>Track your baby from day one</Text>
+        <View style={styles.hero}>
+          <Text style={styles.logo}>👶</Text>
+          <Text style={styles.title}>Create your account</Text>
+          <Text style={styles.tagline}>Start tracking from day one 💜</Text>
+        </View>
 
-        {error ? <Text style={styles.errorBanner}>{error}</Text> : null}
+        {error ? (
+          <View style={styles.errorBanner}>
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        ) : null}
 
         <View style={styles.form}>
 
@@ -88,7 +95,7 @@ export default function RegisterScreen({ navigation }) {
             value={displayName}
             onChangeText={setDisplayName}
             placeholder="e.g. Sarah"
-            placeholderTextColor="#bbb"
+            placeholderTextColor="#C4B8D8"
             autoComplete="name"
             returnKeyType="next"
           />
@@ -99,7 +106,7 @@ export default function RegisterScreen({ navigation }) {
             value={email}
             onChangeText={setEmail}
             placeholder="you@example.com"
-            placeholderTextColor="#bbb"
+            placeholderTextColor="#C4B8D8"
             autoCapitalize="none"
             keyboardType="email-address"
             autoComplete="email"
@@ -112,7 +119,7 @@ export default function RegisterScreen({ navigation }) {
             value={password}
             onChangeText={setPassword}
             placeholder="At least 6 characters"
-            placeholderTextColor="#bbb"
+            placeholderTextColor="#C4B8D8"
             secureTextEntry
             returnKeyType={addingBaby ? "next" : "done"}
             onSubmitEditing={addingBaby ? undefined : handleRegister}
@@ -147,7 +154,7 @@ export default function RegisterScreen({ navigation }) {
                 value={babyName}
                 onChangeText={setBabyName}
                 placeholder="e.g. Emma"
-                placeholderTextColor="#bbb"
+                placeholderTextColor="#C4B8D8"
                 returnKeyType="done"
                 onSubmitEditing={handleRegister}
                 autoFocus={false}
@@ -206,55 +213,39 @@ function friendlyError(code) {
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  container: {
-    flexGrow: 1,
-    justifyContent: "center",
-    padding: 28,
-  },
-  logo: {
-    fontSize: 56,
-    textAlign: "center",
-    marginBottom: 12,
-  },
-  title: {
-    fontSize: 26,
-    fontWeight: "700",
-    color: "#1a1a2e",
-    textAlign: "center",
-    marginBottom: 6,
-  },
-  sub: {
-    fontSize: 15,
-    color: "#888",
-    textAlign: "center",
-    marginBottom: 32,
-  },
+  flex: { flex: 1, backgroundColor: "#FBF8FF" },
+  container: { flexGrow: 1, justifyContent: "center", padding: 28 },
+  hero: { alignItems: "center", marginBottom: 32 },
+  logo: { fontSize: 64, marginBottom: 12 },
+  title: { fontSize: 26, fontWeight: "800", color: "#1C1830", marginBottom: 6 },
+  tagline: { fontSize: 15, color: "#A599BE", fontWeight: "500" },
   errorBanner: {
-    backgroundColor: "#ffebee",
-    color: "#c62828",
-    padding: 12,
-    borderRadius: 8,
+    backgroundColor: "#FDECEC",
+    borderRadius: 12,
+    padding: 14,
     marginBottom: 20,
-    fontSize: 14,
-    textAlign: "center",
+    borderLeftWidth: 3,
+    borderLeftColor: "#E05252",
   },
+  errorText: { color: "#E05252", fontSize: 14, fontWeight: "500" },
   form: { marginBottom: 20 },
   label: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#444",
-    marginBottom: 6,
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#655E80",
+    marginBottom: 8,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
   input: {
-    height: 48,
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 10,
-    paddingHorizontal: 14,
+    height: 52,
+    borderWidth: 1.5,
+    borderColor: "#EDE6FA",
+    borderRadius: 14,
+    paddingHorizontal: 16,
     fontSize: 15,
-    backgroundColor: "#fff",
-    color: "#111",
+    backgroundColor: "#F7F4FE",
+    color: "#1C1830",
     marginBottom: 16,
   },
 
@@ -263,76 +254,60 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    marginBottom: 16,
+    marginBottom: 14,
     paddingVertical: 4,
   },
   checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 6,
+    width: 26,
+    height: 26,
+    borderRadius: 8,
     borderWidth: 2,
-    borderColor: "#ccc",
+    borderColor: "#EDE6FA",
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
+    backgroundColor: "#F7F4FE",
   },
-  checkboxChecked: {
-    backgroundColor: "#1565c0",
-    borderColor: "#1565c0",
-  },
-  checkmark: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "700",
-  },
+  checkboxChecked: { backgroundColor: "#7B5EA7", borderColor: "#7B5EA7" },
+  checkmark: { color: "#fff", fontSize: 14, fontWeight: "800" },
   toggleTextBlock: { flex: 1 },
-  toggleLabel: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#1a1a2e",
-  },
-  toggleSub: {
-    fontSize: 12,
-    color: "#999",
-    marginTop: 2,
-  },
+  toggleLabel: { fontSize: 15, fontWeight: "600", color: "#1C1830" },
+  toggleSub: { fontSize: 12, color: "#A599BE", marginTop: 2 },
 
   // Baby section (shown when toggle is on)
   babySection: {
-    backgroundColor: "#f8f9fa",
-    borderRadius: 10,
+    backgroundColor: "#F0EAFF",
+    borderRadius: 14,
     padding: 14,
     marginBottom: 4,
   },
 
   // Skip note (shown when toggle is off)
   skipNote: {
-    backgroundColor: "#e8f5e9",
-    borderRadius: 10,
+    backgroundColor: "#E8F6F0",
+    borderRadius: 14,
     padding: 14,
     marginBottom: 4,
   },
-  skipNoteText: {
-    fontSize: 13,
-    color: "#2e7d32",
-    lineHeight: 19,
-  },
+  skipNoteText: { fontSize: 13, color: "#47A67E", lineHeight: 20 },
 
   // Submit
   btn: {
-    backgroundColor: "#1565c0",
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: "#F4845F",
+    borderRadius: 16,
+    height: 56,
     alignItems: "center",
+    justifyContent: "center",
     marginBottom: 20,
+    shadowColor: "#F4845F",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 5,
   },
-  btnDisabled: { opacity: 0.55 },
-  btnText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "700",
-  },
+  btnDisabled: { opacity: 0.55, shadowOpacity: 0 },
+  btnText: { color: "#fff", fontSize: 17, fontWeight: "800" },
   link: { alignItems: "center", padding: 8 },
-  linkText: { fontSize: 14, color: "#888" },
-  linkBold: { color: "#1565c0", fontWeight: "600" },
+  linkText: { fontSize: 14, color: "#A599BE" },
+  linkBold: { color: "#7B5EA7", fontWeight: "700" },
 });

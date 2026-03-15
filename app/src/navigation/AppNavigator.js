@@ -28,10 +28,11 @@ export default function AppNavigator() {
   return (
     <Stack.Navigator
       screenOptions={{
-        headerStyle:      { backgroundColor: "#fff" },
-        headerTintColor:  "#1a1a2e",
-        headerTitleStyle: { fontWeight: "700" },
-        contentStyle:     { backgroundColor: "#f8f9fa" },
+        headerStyle:      { backgroundColor: "#FFFFFF" },
+        headerTintColor:  "#7B5EA7",
+        headerTitleStyle: { fontWeight: "700", color: "#1C1830", fontSize: 18 },
+        headerShadowVisible: false,
+        contentStyle:     { backgroundColor: "#FBF8FF" },
       }}
     >
       <Stack.Screen

@@ -12,35 +12,26 @@ import { useBaby }                from "../../context/BabyContext";
 import { logoutUser }             from "../../services/authService";
 import { usePermissions }         from "../../hooks/usePermissions";
 import { useSleepTimer }          from "../../hooks/useSleepTimer";
+import { useEvents }              from "../../hooks/useEvents";
+import { useReminders }           from "../../hooks/useReminders";
 import RoleBadge                  from "../../components/RoleBadge";
 import SleepTimerCard             from "../../components/SleepTimerCard";
 import OfflineBanner              from "../../components/OfflineBanner";
 import { showConfirm, showAlert } from "../../utils/platform";
 import { addEvent }               from "../../services/eventStore";
 import { notifyCoParents }        from "../../services/notificationService";
-import { useEvents }              from "../../hooks/useEvents";
-import { useReminders }           from "../../hooks/useReminders";
 
-// Event-logging buttons — only shown when user can write
-const WRITE_BUTTONS = [
-  { screen: "Feeding", icon: "🍼", label: "Log Feeding", color: "#e3f2fd", text: "#1565c0" },
-  { screen: "Poop",    icon: "💩", label: "Log Poop",    color: "#fff8e1", text: "#e65100" },
-  { screen: "Pee",     icon: "💧", label: "Log Pee",     color: "#e0f7fa", text: "#00695c" },
-];
-
-// Always visible buttons
-const READ_BUTTONS = [
-  { screen: "Analytics",     icon: "📊", label: "Analytics",      color: "#e8f5e9", text: "#2e7d32" },
-  { screen: "History",       icon: "📋", label: "History",        color: "#fafafa", text: "#444"    },
-  { screen: "Growth",        icon: "📏", label: "Growth",         color: "#e8eaf6", text: "#3949ab" },
-  { screen: "Milestones",    icon: "🎯", label: "Milestones",     color: "#fce4ec", text: "#880e4f" },
-  { screen: "Invites",       icon: "📬", label: "Invites",        color: "#fff3e0", text: "#e65100" },
-  { screen: "ManageMembers", icon: "👥", label: "Manage Members", color: "#ede7f6", text: "#4527a0" },
-];
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h >= 5  && h < 12) return "Good morning ☀️";
+  if (h >= 12 && h < 18) return "Good afternoon 🌤";
+  if (h >= 18 && h < 22) return "Good evening 🌙";
+  return "Night mode 🌛";
+}
 
 function timeAgo(date) {
   if (!date) return null;
-  const diffMs = Date.now() - (date instanceof Date ? date.getTime() : date);
+  const diffMs   = Date.now() - (date instanceof Date ? date.getTime() : date);
   const diffMins = Math.floor(diffMs / 60000);
   if (diffMins < 1)  return "just now";
   if (diffMins < 60) return `${diffMins}m ago`;
@@ -50,10 +41,10 @@ function timeAgo(date) {
 }
 
 const ACTIVITY_TYPES = [
-  { type: "feeding", icon: "🍼", label: "Fed"   },
-  { type: "sleep",   icon: "😴", label: "Slept" },
-  { type: "poop",    icon: "💩", label: "Poop"  },
-  { type: "pee",     icon: "💧", label: "Pee"   },
+  { type: "feeding", icon: "🍼", label: "Fed",   color: "#F4845F" },
+  { type: "sleep",   icon: "😴", label: "Slept", color: "#7B5EA7" },
+  { type: "poop",    icon: "💩", label: "Poop",  color: "#E88C3A" },
+  { type: "pee",     icon: "💧", label: "Pee",   color: "#47A67E" },
 ];
 
 function LastActivityCard({ events }) {
@@ -68,14 +59,16 @@ function LastActivityCard({ events }) {
   if (items.length === 0) return null;
 
   return (
-    <View style={lastStyles.card}>
-      <Text style={lastStyles.header}>Last Activity</Text>
-      <View style={lastStyles.row}>
-        {items.map(({ type, icon, label }) => (
-          <View key={type} style={lastStyles.item}>
-            <Text style={lastStyles.icon}>{icon}</Text>
-            <Text style={lastStyles.label}>{label}</Text>
-            <Text style={lastStyles.time}>{timeAgo(lastByType[type])}</Text>
+    <View style={styles.activityCard}>
+      <Text style={styles.sectionLabel}>Last Activity</Text>
+      <View style={styles.activityRow}>
+        {items.map(({ type, icon, label, color }) => (
+          <View key={type} style={styles.activityItem}>
+            <View style={[styles.activityIconBg, { backgroundColor: color + "20" }]}>
+              <Text style={styles.activityIcon}>{icon}</Text>
+            </View>
+            <Text style={styles.activityLabel}>{label}</Text>
+            <Text style={styles.activityTime}>{timeAgo(lastByType[type])}</Text>
           </View>
         ))}
       </View>
@@ -83,47 +76,25 @@ function LastActivityCard({ events }) {
   );
 }
 
-const lastStyles = StyleSheet.create({
-  card: {
-    backgroundColor: "#fff",
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 12,
-    elevation: 1,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 2,
-  },
-  header: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: "#888",
-    textTransform: "uppercase",
-    letterSpacing: 0.8,
-    marginBottom: 10,
-  },
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-  },
-  item: { alignItems: "center" },
-  icon: { fontSize: 22, marginBottom: 3 },
-  label: { fontSize: 11, color: "#888", fontWeight: "600" },
-  time: { fontSize: 12, color: "#444", fontWeight: "500", marginTop: 1 },
-});
+const NAV_CARDS = [
+  { screen: "Analytics",     icon: "📊", label: "Analytics",  color: "#E8F6F0", iconColor: "#47A67E" },
+  { screen: "History",       icon: "📋", label: "History",    color: "#F0EAFF", iconColor: "#7B5EA7" },
+  { screen: "Growth",        icon: "📏", label: "Growth",     color: "#FFF8EC", iconColor: "#E88C3A" },
+  { screen: "Milestones",    icon: "🎯", label: "Milestones", color: "#FFF0EB", iconColor: "#F4845F" },
+  { screen: "Invites",       icon: "📬", label: "Invites",    color: "#F0EAFF", iconColor: "#7B5EA7" },
+  { screen: "ManageMembers", icon: "👥", label: "Members",    color: "#E8F6F0", iconColor: "#47A67E" },
+];
 
 export default function Dashboard({ navigation }) {
-  const { user }                              = useAuth();
+  const { user }                                    = useAuth();
   const { activeBaby, activeBabyId, loadingBabies } = useBaby();
-  const { canWriteEvents }                    = usePermissions();
-  const { isActive }                          = useSleepTimer();
-  const { events }                            = useEvents(activeBabyId);
+  const { canWriteEvents }                          = usePermissions();
+  const { isActive }                                = useSleepTimer();
+  const { events }                                  = useEvents(activeBabyId);
   useReminders(events, activeBaby);
 
   const [loggingOut, setLoggingOut]           = useState(false);
   const isLoggingOut                          = useRef(false);
-
   const [quickLogSuccess, setQuickLogSuccess] = useState({ poop: false, pee: false });
   const quickLogInFlight                      = useRef({ poop: false, pee: false });
 
@@ -144,9 +115,7 @@ export default function Dashboard({ navigation }) {
   const handleQuickLog = async (type) => {
     if (quickLogInFlight.current[type]) return;
     if (!activeBabyId || !canWriteEvents) return;
-
     quickLogInFlight.current[type] = true;
-
     try {
       await addEvent(activeBabyId, user.uid, type);
       notifyCoParents(activeBaby, user.uid, user.displayName, type);
@@ -162,36 +131,35 @@ export default function Dashboard({ navigation }) {
     }
   };
 
-  const buttons = canWriteEvents
-    ? [...WRITE_BUTTONS, ...READ_BUTTONS]
-    : READ_BUTTONS;
-
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-
+    <ScrollView
+      style={styles.scroll}
+      contentContainerStyle={styles.container}
+      showsVerticalScrollIndicator={false}
+    >
       {/* Header */}
-      <View style={styles.headerRow}>
-        <View>
-          <Text style={styles.greeting}>Hello, {user?.displayName ?? "there"} 👋</Text>
-          <Text style={styles.sub}>What happened?</Text>
+      <View style={styles.header}>
+        <View style={styles.headerLeft}>
+          <Text style={styles.greeting}>{getGreeting()}</Text>
+          <Text style={styles.userName}>{user?.displayName ?? "there"}</Text>
         </View>
-        <View style={styles.headerActions}>
+        <View style={styles.headerRight}>
           <TouchableOpacity
             onPress={() => navigation.navigate("Settings")}
-            style={styles.iconBtn}
+            style={styles.headerBtn}
             accessibilityRole="button"
             accessibilityLabel="Settings"
           >
-            <Text style={styles.iconBtnText}>⚙️</Text>
+            <Text style={styles.headerBtnIcon}>⚙️</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={handleLogout}
             disabled={loggingOut}
-            style={styles.logoutBtn}
+            style={styles.headerBtn}
           >
             {loggingOut
-              ? <ActivityIndicator size="small" color="#888" />
-              : <Text style={styles.logoutText}>Sign out</Text>
+              ? <ActivityIndicator size="small" color="#7B5EA7" />
+              : <Text style={styles.headerBtnIcon}>👋</Text>
             }
           </TouchableOpacity>
         </View>
@@ -199,47 +167,62 @@ export default function Dashboard({ navigation }) {
 
       <OfflineBanner />
 
-      {/* Baby selector pill */}
+      {/* Baby card */}
       <TouchableOpacity
-        style={[styles.babyPill, !activeBaby && styles.babyPillWarning]}
+        style={[styles.babyCard, !activeBaby && styles.babyCardWarning]}
         onPress={() => navigation.navigate("BabySelector")}
+        accessibilityRole="button"
       >
         {loadingBabies ? (
-          <ActivityIndicator size="small" color="#1565c0" />
+          <ActivityIndicator color="#7B5EA7" />
         ) : (
-          <>
-            <Text style={styles.babyPillIcon}>{activeBaby ? "👶" : "⚠️"}</Text>
-            <Text style={styles.babyPillName}>
-              {activeBaby ? activeBaby.name : "No baby — tap to add one"}
-            </Text>
-            <Text style={styles.babyPillChevron}>›</Text>
-          </>
+          <View style={styles.babyCardInner}>
+            <Text style={styles.babyCardIcon}>{activeBaby ? "👶" : "⚠️"}</Text>
+            <View style={styles.babyCardText}>
+              <Text style={styles.babyCardName}>
+                {activeBaby ? activeBaby.name : "No baby selected"}
+              </Text>
+              <Text style={styles.babyCardSub}>
+                {activeBaby ? "Tap to switch or manage babies" : "Tap to add a baby"}
+              </Text>
+            </View>
+            <Text style={styles.babyCardChevron}>›</Text>
+          </View>
         )}
       </TouchableOpacity>
 
-      {/* Role badge */}
       <RoleBadge />
-
-      {/* Last activity summary */}
-      {activeBaby ? <LastActivityCard events={events} /> : null}
 
       {/* Read-only banner */}
       {!canWriteEvents && activeBaby ? (
         <View style={styles.readOnlyBanner}>
           <Text style={styles.readOnlyText}>
-            👁 You have read-only access. You can view data but cannot log events.
+            👁 Read-only access — you can view but not log events
           </Text>
         </View>
       ) : null}
 
-      {/* Sleep timer — compact version on dashboard */}
+      {/* Last activity */}
+      {activeBaby ? <LastActivityCard events={events} /> : null}
+
+      {/* Sleep timer */}
       {activeBaby ? <SleepTimerCard compact={true} /> : null}
 
-      {/* Quick Log section */}
+      {/* Quick log */}
       {canWriteEvents && activeBaby ? (
         <View style={styles.quickLogSection}>
-          <Text style={styles.quickLogTitle}>Quick Log</Text>
+          <Text style={styles.sectionLabel}>Quick Log</Text>
           <View style={styles.quickLogRow}>
+            <TouchableOpacity
+              style={styles.quickLogBtn}
+              onPress={() => navigation.navigate("Feeding")}
+              accessibilityRole="button"
+              accessibilityLabel="Log feeding"
+            >
+              <Text style={styles.quickLogEmoji}>🍼</Text>
+              <Text style={styles.quickLogText}>Feed</Text>
+            </TouchableOpacity>
+
             <TouchableOpacity
               style={styles.quickLogBtn}
               onPress={() => handleQuickLog("poop")}
@@ -249,6 +232,7 @@ export default function Dashboard({ navigation }) {
               <Text style={styles.quickLogEmoji}>
                 {quickLogSuccess.poop ? "✅" : "💩"}
               </Text>
+              <Text style={styles.quickLogText}>Poop</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -260,129 +244,188 @@ export default function Dashboard({ navigation }) {
               <Text style={styles.quickLogEmoji}>
                 {quickLogSuccess.pee ? "✅" : "💧"}
               </Text>
+              <Text style={styles.quickLogText}>Pee</Text>
             </TouchableOpacity>
+
+            {!isActive ? (
+              <TouchableOpacity
+                style={styles.quickLogBtn}
+                onPress={() => navigation.navigate("Sleep")}
+                accessibilityRole="button"
+                accessibilityLabel="Log sleep"
+              >
+                <Text style={styles.quickLogEmoji}>😴</Text>
+                <Text style={styles.quickLogText}>Sleep</Text>
+              </TouchableOpacity>
+            ) : null}
           </View>
         </View>
       ) : null}
 
-      {/* Action grid */}
-      <View style={styles.buttons}>
-        {/* Sleep button gets special treatment — skip if timer is active */}
-        {canWriteEvents && !isActive ? (
-          <TouchableOpacity
-            style={[styles.card, { backgroundColor: "#f3e5f5" }]}
-            onPress={() => navigation.navigate("Sleep")}
-            accessibilityRole="button"
-          >
-            <Text style={styles.cardIcon}>😴</Text>
-            <Text style={[styles.cardLabel, { color: "#6a1b9a" }]}>Sleep</Text>
-          </TouchableOpacity>
-        ) : null}
-
-        {buttons.map(({ screen, icon, label, color, text }) => (
+      {/* Nav grid */}
+      <Text style={styles.sectionLabel}>Explore</Text>
+      <View style={styles.grid}>
+        {NAV_CARDS.map(({ screen, icon, label, color, iconColor }) => (
           <TouchableOpacity
             key={screen}
-            style={[styles.card, { backgroundColor: color }]}
+            style={[styles.gridCard, { backgroundColor: color }]}
             onPress={() => navigation.navigate(screen)}
             accessibilityRole="button"
             accessibilityLabel={label}
           >
-            <Text style={styles.cardIcon}>{icon}</Text>
-            <Text style={[styles.cardLabel, { color: text }]}>{label}</Text>
+            <Text style={styles.gridIcon}>{icon}</Text>
+            <Text style={[styles.gridLabel, { color: iconColor }]}>{label}</Text>
           </TouchableOpacity>
         ))}
       </View>
+
+      <View style={{ height: 32 }} />
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
+  scroll: { flex: 1, backgroundColor: "#FBF8FF" },
   container: { padding: 20, paddingBottom: 40 },
-  headerRow: {
+
+  // Header
+  header: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 16,
-  },
-  greeting: { fontSize: 20, fontWeight: "700", color: "#1a1a2e" },
-  sub: { fontSize: 14, color: "#888", marginTop: 2 },
-  headerActions: {
-    flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    marginBottom: 20,
   },
-  iconBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "#f5f5f5",
+  headerLeft: {},
+  greeting: { fontSize: 13, color: "#A599BE", fontWeight: "500", marginBottom: 2 },
+  userName:  { fontSize: 22, fontWeight: "800", color: "#1C1830" },
+  headerRight: { flexDirection: "row", gap: 8 },
+  headerBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#FFFFFF",
     alignItems: "center",
     justifyContent: "center",
+    shadowColor: "#7B5EA7",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 2,
   },
-  iconBtnText: { fontSize: 18 },
-  logoutBtn: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    backgroundColor: "#f5f5f5",
-    borderRadius: 8,
-    minWidth: 70,
-    alignItems: "center",
-  },
-  logoutText: { fontSize: 13, color: "#666", fontWeight: "600" },
-  babyPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#e3f2fd",
-    borderRadius: 50,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
+  headerBtnIcon: { fontSize: 18 },
+
+  // Baby card
+  babyCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 18,
+    padding: 16,
     marginBottom: 12,
-    alignSelf: "flex-start",
+    shadowColor: "#7B5EA7",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 3,
   },
-  babyPillWarning: { backgroundColor: "#fff3e0" },
-  babyPillIcon: { fontSize: 16, marginRight: 6 },
-  babyPillName: { fontSize: 15, fontWeight: "600", color: "#1565c0", marginRight: 4 },
-  babyPillChevron: { fontSize: 18, color: "#1565c0" },
+  babyCardWarning: { borderWidth: 1.5, borderColor: "#E88C3A" },
+  babyCardInner: { flexDirection: "row", alignItems: "center" },
+  babyCardIcon: { fontSize: 28, marginRight: 12 },
+  babyCardText: { flex: 1 },
+  babyCardName: { fontSize: 17, fontWeight: "700", color: "#1C1830" },
+  babyCardSub:  { fontSize: 12, color: "#A599BE", marginTop: 2 },
+  babyCardChevron: { fontSize: 22, color: "#C4B8D8" },
+
+  // Read-only
   readOnlyBanner: {
-    backgroundColor: "#fff8e1",
-    borderRadius: 10,
+    backgroundColor: "#FEF3E8",
+    borderRadius: 12,
     padding: 12,
     marginBottom: 12,
+    borderLeftWidth: 3,
+    borderLeftColor: "#E88C3A",
   },
-  readOnlyText: { fontSize: 13, color: "#e65100", fontWeight: "500" },
-  quickLogSection: {
-    marginBottom: 16,
-  },
-  quickLogTitle: {
-    fontSize: 13,
+  readOnlyText: { fontSize: 13, color: "#E88C3A", fontWeight: "500" },
+
+  // Section label
+  sectionLabel: {
+    fontSize: 12,
     fontWeight: "700",
-    color: "#888",
+    color: "#A599BE",
     textTransform: "uppercase",
-    letterSpacing: 0.8,
+    letterSpacing: 1,
     marginBottom: 10,
   },
+
+  // Last activity
+  activityCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 18,
+    padding: 16,
+    marginBottom: 14,
+    shadowColor: "#7B5EA7",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  activityRow: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+  },
+  activityItem: { alignItems: "center" },
+  activityIconBg: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 5,
+  },
+  activityIcon:  { fontSize: 22 },
+  activityLabel: { fontSize: 11, color: "#A599BE", fontWeight: "600" },
+  activityTime:  { fontSize: 12, color: "#1C1830", fontWeight: "600", marginTop: 1 },
+
+  // Quick log
+  quickLogSection: { marginBottom: 18 },
   quickLogRow: {
     flexDirection: "row",
     gap: 12,
   },
   quickLogBtn: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: "#fff",
+    flex: 1,
+    aspectRatio: 1,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
+    shadowColor: "#7B5EA7",
+    shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowRadius: 8,
     elevation: 3,
+    paddingVertical: 12,
   },
-  quickLogEmoji: {
-    fontSize: 32,
+  quickLogEmoji: { fontSize: 28 },
+  quickLogText:  { fontSize: 11, color: "#655E80", fontWeight: "600", marginTop: 4 },
+
+  // Nav grid
+  grid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
+    marginBottom: 4,
   },
-  buttons: { gap: 12 },
-  card: { flexDirection: "row", alignItems: "center", borderRadius: 14, padding: 18 },
-  cardIcon: { fontSize: 26, marginRight: 14 },
-  cardLabel: { fontSize: 17, fontWeight: "600" },
+  gridCard: {
+    width: "47%",
+    borderRadius: 18,
+    padding: 18,
+    minHeight: 90,
+    justifyContent: "space-between",
+    shadowColor: "#7B5EA7",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 1,
+  },
+  gridIcon:  { fontSize: 28 },
+  gridLabel: { fontSize: 14, fontWeight: "700", marginTop: 8 },
 });
