@@ -59,6 +59,10 @@
     "transformIgnorePatterns": [
       "/node_modules/(?!(@firebase|firebase)/)"
     ],
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "/__tests__/security/"
+    ],
     "setupFiles": [
       "./jest.setup.js"
     ]
