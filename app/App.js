@@ -5,6 +5,7 @@ import { AuthProvider }    from "./src/context/AuthContext";
 import { BabyProvider }    from "./src/context/BabyContext";
 import { ThemeProvider }   from "./src/context/ThemeContext";
 import RootNavigator       from "./src/navigation/RootNavigator";
+import ErrorBoundary       from "./src/components/ErrorBoundary";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -22,14 +23,16 @@ Notifications.setNotificationHandler({
  */
 export default function App() {
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <BabyProvider>
-          <NavigationContainer>
-            <RootNavigator />
-          </NavigationContainer>
-        </BabyProvider>
-      </AuthProvider>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider>
+        <AuthProvider>
+          <BabyProvider>
+            <NavigationContainer>
+              <RootNavigator />
+            </NavigationContainer>
+          </BabyProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }

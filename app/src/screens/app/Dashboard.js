@@ -18,6 +18,8 @@ import OfflineBanner              from "../../components/OfflineBanner";
 import { showConfirm, showAlert } from "../../utils/platform";
 import { addEvent }               from "../../services/eventStore";
 import { notifyCoParents }        from "../../services/notificationService";
+import { useEvents }              from "../../hooks/useEvents";
+import { useReminders }           from "../../hooks/useReminders";
 
 // Event-logging buttons — only shown when user can write
 const WRITE_BUTTONS = [
@@ -36,11 +38,88 @@ const READ_BUTTONS = [
   { screen: "ManageMembers", icon: "👥", label: "Manage Members", color: "#ede7f6", text: "#4527a0" },
 ];
 
+function timeAgo(date) {
+  if (!date) return null;
+  const diffMs = Date.now() - (date instanceof Date ? date.getTime() : date);
+  const diffMins = Math.floor(diffMs / 60000);
+  if (diffMins < 1)  return "just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return `${diffHours}h ${diffMins % 60}m ago`;
+  return `${Math.floor(diffHours / 24)}d ago`;
+}
+
+const ACTIVITY_TYPES = [
+  { type: "feeding", icon: "🍼", label: "Fed"   },
+  { type: "sleep",   icon: "😴", label: "Slept" },
+  { type: "poop",    icon: "💩", label: "Poop"  },
+  { type: "pee",     icon: "💧", label: "Pee"   },
+];
+
+function LastActivityCard({ events }) {
+  if (!events || events.length === 0) return null;
+
+  const lastByType = {};
+  for (const ev of events) {
+    if (!lastByType[ev.type]) lastByType[ev.type] = ev.time;
+  }
+
+  const items = ACTIVITY_TYPES.filter(({ type }) => lastByType[type]);
+  if (items.length === 0) return null;
+
+  return (
+    <View style={lastStyles.card}>
+      <Text style={lastStyles.header}>Last Activity</Text>
+      <View style={lastStyles.row}>
+        {items.map(({ type, icon, label }) => (
+          <View key={type} style={lastStyles.item}>
+            <Text style={lastStyles.icon}>{icon}</Text>
+            <Text style={lastStyles.label}>{label}</Text>
+            <Text style={lastStyles.time}>{timeAgo(lastByType[type])}</Text>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+const lastStyles = StyleSheet.create({
+  card: {
+    backgroundColor: "#fff",
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 12,
+    elevation: 1,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 2,
+  },
+  header: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#888",
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+    marginBottom: 10,
+  },
+  row: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+  },
+  item: { alignItems: "center" },
+  icon: { fontSize: 22, marginBottom: 3 },
+  label: { fontSize: 11, color: "#888", fontWeight: "600" },
+  time: { fontSize: 12, color: "#444", fontWeight: "500", marginTop: 1 },
+});
+
 export default function Dashboard({ navigation }) {
   const { user }                              = useAuth();
   const { activeBaby, activeBabyId, loadingBabies } = useBaby();
   const { canWriteEvents }                    = usePermissions();
   const { isActive }                          = useSleepTimer();
+  const { events }                            = useEvents(activeBabyId);
+  useReminders(events, activeBaby);
 
   const [loggingOut, setLoggingOut]           = useState(false);
   const isLoggingOut                          = useRef(false);
@@ -140,6 +219,9 @@ export default function Dashboard({ navigation }) {
 
       {/* Role badge */}
       <RoleBadge />
+
+      {/* Last activity summary */}
+      {activeBaby ? <LastActivityCard events={events} /> : null}
 
       {/* Read-only banner */}
       {!canWriteEvents && activeBaby ? (

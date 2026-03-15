@@ -18,6 +18,12 @@ jest.mock('../../src/hooks/usePermissions', () => ({
 jest.mock('../../src/hooks/useSleepTimer', () => ({
   useSleepTimer: jest.fn(() => ({ isActive: false, elapsedSeconds: 0, starting: false, stopping: false, handleStart: jest.fn(), handleStop: jest.fn() })),
 }));
+jest.mock('../../src/hooks/useEvents', () => ({
+  useEvents: jest.fn(() => ({ events: [], loading: false, error: null })),
+}));
+jest.mock('../../src/hooks/useReminders', () => ({
+  useReminders: jest.fn(),
+}));
 
 // Service mocks
 const mockAddEvent = jest.fn(() => Promise.resolve('event-id'));
