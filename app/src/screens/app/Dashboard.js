@@ -15,6 +15,8 @@ import { useSleepTimer }          from "../../hooks/useSleepTimer";
 import RoleBadge                  from "../../components/RoleBadge";
 import SleepTimerCard             from "../../components/SleepTimerCard";
 import { showConfirm, showAlert } from "../../utils/platform";
+import { addEvent }               from "../../services/eventStore";
+import { notifyCoParents }        from "../../services/notificationService";
 
 // Event-logging buttons — only shown when user can write
 const WRITE_BUTTONS = [
@@ -32,13 +34,16 @@ const READ_BUTTONS = [
 ];
 
 export default function Dashboard({ navigation }) {
-  const { user }                      = useAuth();
-  const { activeBaby, loadingBabies } = useBaby();
-  const { canWriteEvents }            = usePermissions();
-  const { isActive }                  = useSleepTimer();
+  const { user }                              = useAuth();
+  const { activeBaby, activeBabyId, loadingBabies } = useBaby();
+  const { canWriteEvents }                    = usePermissions();
+  const { isActive }                          = useSleepTimer();
 
-  const [loggingOut, setLoggingOut]   = useState(false);
-  const isLoggingOut                  = useRef(false);
+  const [loggingOut, setLoggingOut]           = useState(false);
+  const isLoggingOut                          = useRef(false);
+
+  const [quickLogSuccess, setQuickLogSuccess] = useState({ poop: false, pee: false });
+  const quickLogInFlight                      = useRef({ poop: false, pee: false });
 
   const handleLogout = async () => {
     const confirmed = await showConfirm("Sign Out", "Are you sure you want to sign out?");
@@ -51,6 +56,27 @@ export default function Dashboard({ navigation }) {
       showAlert("Error", "Could not sign out. Please try again.");
       isLoggingOut.current = false;
       setLoggingOut(false);
+    }
+  };
+
+  const handleQuickLog = async (type) => {
+    if (quickLogInFlight.current[type]) return;
+    if (!activeBabyId || !canWriteEvents) return;
+
+    quickLogInFlight.current[type] = true;
+
+    try {
+      await addEvent(activeBabyId, user.uid, type);
+      notifyCoParents(activeBaby, user.uid, user.displayName, type);
+      setQuickLogSuccess((prev) => ({ ...prev, [type]: true }));
+      setTimeout(() => {
+        setQuickLogSuccess((prev) => ({ ...prev, [type]: false }));
+        quickLogInFlight.current[type] = false;
+      }, 1500);
+    } catch (e) {
+      console.error(`[Dashboard] quick log ${type} error:`, e);
+      quickLogInFlight.current[type] = false;
+      showAlert("Error", "Could not log event. Please try again.");
     }
   };
 
@@ -111,6 +137,36 @@ export default function Dashboard({ navigation }) {
 
       {/* Sleep timer — compact version on dashboard */}
       {activeBaby ? <SleepTimerCard compact={true} /> : null}
+
+      {/* Quick Log section */}
+      {canWriteEvents && activeBaby ? (
+        <View style={styles.quickLogSection}>
+          <Text style={styles.quickLogTitle}>Quick Log</Text>
+          <View style={styles.quickLogRow}>
+            <TouchableOpacity
+              style={styles.quickLogBtn}
+              onPress={() => handleQuickLog("poop")}
+              accessibilityRole="button"
+              accessibilityLabel="Quick log poop"
+            >
+              <Text style={styles.quickLogEmoji}>
+                {quickLogSuccess.poop ? "✅" : "💩"}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.quickLogBtn}
+              onPress={() => handleQuickLog("pee")}
+              accessibilityRole="button"
+              accessibilityLabel="Quick log pee"
+            >
+              <Text style={styles.quickLogEmoji}>
+                {quickLogSuccess.pee ? "✅" : "💧"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      ) : null}
 
       {/* Action grid */}
       <View style={styles.buttons}>
@@ -183,6 +239,37 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   readOnlyText: { fontSize: 13, color: "#e65100", fontWeight: "500" },
+  quickLogSection: {
+    marginBottom: 16,
+  },
+  quickLogTitle: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#888",
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+    marginBottom: 10,
+  },
+  quickLogRow: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  quickLogBtn: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  quickLogEmoji: {
+    fontSize: 32,
+  },
   buttons: { gap: 12 },
   card: { flexDirection: "row", alignItems: "center", borderRadius: 14, padding: 18 },
   cardIcon: { fontSize: 26, marginRight: 14 },

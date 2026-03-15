@@ -2,7 +2,6 @@ import React, { useState, useRef } from "react";
 import {
   View,
   Text,
-  FlatList,
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
@@ -11,8 +10,39 @@ import {
   Platform,
   ScrollView,
 } from "react-native";
-import { useBaby } from "../../context/BabyContext";
-import { showAlert } from "../../utils/platform";
+import { useBaby }    from "../../context/BabyContext";
+import { showAlert }  from "../../utils/platform";
+
+function computeAge(birthDate) {
+  // birthDate is a Firestore Timestamp — call .toDate() on it
+  const bd = birthDate && typeof birthDate.toDate === "function"
+    ? birthDate.toDate()
+    : birthDate instanceof Date
+      ? birthDate
+      : null;
+
+  if (!bd) return null;
+
+  const now = new Date();
+  const diffMs = now - bd;
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffDays < 30) {
+    return `${diffDays} day${diffDays === 1 ? "" : "s"} old`;
+  }
+
+  const diffMonths = Math.floor(diffDays / 30.44);
+  if (diffMonths < 12) {
+    return `${diffMonths} month${diffMonths === 1 ? "" : "s"} old`;
+  }
+
+  const years = Math.floor(diffMonths / 12);
+  const months = diffMonths % 12;
+  if (months === 0) {
+    return `${years} year${years === 1 ? "" : "s"} old`;
+  }
+  return `${years} year${years === 1 ? "" : "s"}, ${months} month${months === 1 ? "" : "s"} old`;
+}
 
 export default function BabySelector({ navigation }) {
   const { babies, activeBabyId, setActiveBabyId, addBaby, loadingBabies } = useBaby();
@@ -70,6 +100,7 @@ export default function BabySelector({ navigation }) {
         ) : (
           babies.map((baby) => {
             const isActive = baby.id === activeBabyId;
+            const age = computeAge(baby.birthDate);
             return (
               <TouchableOpacity
                 key={baby.id}
@@ -79,10 +110,23 @@ export default function BabySelector({ navigation }) {
                 accessibilityLabel={`Select ${baby.name}`}
               >
                 <Text style={styles.babyIcon}>👶</Text>
-                <Text style={[styles.babyName, isActive && styles.babyNameActive]}>
-                  {baby.name}
-                </Text>
+                <View style={styles.babyInfo}>
+                  <Text style={[styles.babyName, isActive && styles.babyNameActive]}>
+                    {baby.name}
+                  </Text>
+                  {age ? (
+                    <Text style={styles.babyAge}>{age}</Text>
+                  ) : null}
+                </View>
                 {isActive ? <Text style={styles.check}>✓</Text> : null}
+                <TouchableOpacity
+                  style={styles.editBtn}
+                  onPress={() => navigation.navigate("BabyProfile", { babyId: baby.id })}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Edit ${baby.name}`}
+                >
+                  <Text style={styles.editBtnText}>✏️ Edit</Text>
+                </TouchableOpacity>
               </TouchableOpacity>
             );
           })
@@ -163,8 +207,10 @@ const styles = StyleSheet.create({
     fontSize: 22,
     marginRight: 12,
   },
-  babyName: {
+  babyInfo: {
     flex: 1,
+  },
+  babyName: {
     fontSize: 16,
     fontWeight: "600",
     color: "#1a1a2e",
@@ -172,10 +218,27 @@ const styles = StyleSheet.create({
   babyNameActive: {
     color: "#1565c0",
   },
+  babyAge: {
+    fontSize: 12,
+    color: "#888",
+    marginTop: 2,
+  },
   check: {
     fontSize: 16,
     color: "#1565c0",
     fontWeight: "700",
+    marginRight: 8,
+  },
+  editBtn: {
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    backgroundColor: "rgba(21,101,192,0.1)",
+    borderRadius: 8,
+  },
+  editBtnText: {
+    fontSize: 12,
+    color: "#1565c0",
+    fontWeight: "600",
   },
   input: {
     height: 48,

@@ -13,6 +13,7 @@ import {
 } from "firebase/firestore";
 import { db }        from "../services/firebase";
 import { useAuth }   from "./AuthContext";
+import { createBaby } from "../services/babyService";
 
 /**
  * BabyContext
@@ -112,6 +113,12 @@ export function BabyProvider({ children }) {
 
   const activeBaby = babies.find((b) => b.id === activeBabyId) ?? null;
 
+  const addBaby = async (name, birthDate = null) => {
+    if (!user) throw new Error("Not authenticated");
+    await createBaby(user.uid, name, birthDate);
+    // onSnapshot will fire automatically with the new baby
+  };
+
   // refreshBabies is a no-op now (onSnapshot handles updates automatically)
   // Kept for compatibility with InvitesScreen which calls it after accepting
   const refreshBabies = async () => {
@@ -129,6 +136,7 @@ export function BabyProvider({ children }) {
         setActiveBabyId,
         loadingBabies,
         refreshBabies,
+        addBaby,
       }}
     >
       {children}

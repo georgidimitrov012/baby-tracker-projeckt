@@ -2,6 +2,7 @@ import React, { useState, useRef } from "react";
 import {
   View,
   Text,
+  TextInput,
   TouchableOpacity,
   ActivityIndicator,
   StyleSheet,
@@ -20,20 +21,32 @@ export default function EditEvent({ route, navigation }) {
   const { activeBabyId }   = useBaby();
   const { canWriteEvents } = usePermissions();
 
-  const { eventId, type, amount: initAmount, duration: initDuration } = route.params;
+  const {
+    eventId,
+    type,
+    amount:   initAmount,
+    duration: initDuration,
+    notes:    initNotes,
+  } = route.params;
 
   const isFeeding = type === "feeding";
-  const label     = isFeeding ? "Amount" : "Duration";
-  const unit      = isFeeding ? "ml"     : "min";
-  const icon      = isFeeding ? "🍼"     : "😴";
+  const isSleep   = type === "sleep";
+  const hasNumericField = isFeeding || isSleep;
+
+  const label     = isFeeding ? "Amount"   : "Duration";
+  const unit      = isFeeding ? "ml"       : "min";
+  const icon      = isFeeding ? "🍼"       : isSleep ? "😴" : type === "poop" ? "💩" : "💧";
   const validate  = isFeeding ? validateAmount : validateDuration;
 
   const [value, setValue]           = useState(
     isFeeding
       ? String(initAmount   ?? "")
-      : String(initDuration ?? "")
+      : isSleep
+        ? String(initDuration ?? "")
+        : ""
   );
   const [fieldError, setFieldError] = useState(null);
+  const [notes, setNotes]           = useState(initNotes ?? "");
   const [saving, setSaving]         = useState(false);
   const isSubmitting                = useRef(false);
 
@@ -45,20 +58,26 @@ export default function EditEvent({ route, navigation }) {
       return;
     }
 
-    const { valid, error } = validate(value);
-    if (!valid) {
-      setFieldError(error);
-      return;
+    if (hasNumericField) {
+      const { valid, error } = validate(value);
+      if (!valid) {
+        setFieldError(error);
+        return;
+      }
+      setFieldError(null);
     }
-    setFieldError(null);
 
     isSubmitting.current = true;
     setSaving(true);
 
     try {
-      const fields = isFeeding
-        ? { amount:   parseInt(value, 10) }
-        : { duration: parseInt(value, 10) };
+      let fields = { notes: notes.trim() || null };
+
+      if (isFeeding) {
+        fields.amount = parseInt(value, 10);
+      } else if (isSleep) {
+        fields.duration = parseInt(value, 10);
+      }
 
       await updateEvent(activeBabyId, eventId, fields);
       navigation.goBack();
@@ -87,17 +106,33 @@ export default function EditEvent({ route, navigation }) {
           </Text>
         </Text>
 
-        <FormInput
-          label={label}
-          value={value}
-          onChangeText={(v) => {
-            setValue(v);
-            if (fieldError) setFieldError(null);
-          }}
-          unit={unit}
-          error={fieldError}
-          autoFocus
-          keyboardType="numeric"
+        {hasNumericField ? (
+          <FormInput
+            label={label}
+            value={value}
+            onChangeText={(v) => {
+              setValue(v);
+              if (fieldError) setFieldError(null);
+            }}
+            unit={unit}
+            error={fieldError}
+            autoFocus
+            keyboardType="numeric"
+            editable={canWriteEvents}
+          />
+        ) : null}
+
+        <Text style={styles.notesLabel}>Notes (optional)</Text>
+        <TextInput
+          style={[styles.notesInput, !canWriteEvents && styles.notesInputDisabled]}
+          value={notes}
+          onChangeText={setNotes}
+          placeholder="Notes (optional)"
+          placeholderTextColor="#bbb"
+          multiline
+          numberOfLines={3}
+          keyboardType="default"
+          textAlignVertical="top"
           editable={canWriteEvents}
         />
 
@@ -140,6 +175,30 @@ const styles = StyleSheet.create({
   typeLabel: {
     fontWeight: "700",
     color: "#1a1a2e",
+  },
+  notesLabel: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#555",
+    marginBottom: 6,
+    marginTop: 4,
+  },
+  notesInput: {
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    fontSize: 15,
+    backgroundColor: "#fff",
+    color: "#111",
+    minHeight: 80,
+    marginBottom: 16,
+    textAlignVertical: "top",
+  },
+  notesInputDisabled: {
+    backgroundColor: "#f5f5f5",
+    color: "#aaa",
   },
   btn: {
     backgroundColor: "#2e7d32",

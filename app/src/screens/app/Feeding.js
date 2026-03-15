@@ -2,6 +2,7 @@ import React, { useState, useRef } from "react";
 import {
   View,
   Text,
+  TextInput,
   TouchableOpacity,
   ActivityIndicator,
   StyleSheet,
@@ -9,21 +10,23 @@ import {
   Platform,
   ScrollView,
 } from "react-native";
-import { useAuth }          from "../../context/AuthContext";
-import { useBaby }          from "../../context/BabyContext";
-import { usePermissions }   from "../../hooks/usePermissions";
-import { addEvent }         from "../../services/eventStore";
-import { validateAmount }   from "../../utils/validation";
-import { showAlert }        from "../../utils/platform";
-import FormInput            from "../../components/FormInput";
+import { useAuth }             from "../../context/AuthContext";
+import { useBaby }             from "../../context/BabyContext";
+import { usePermissions }      from "../../hooks/usePermissions";
+import { addEvent }            from "../../services/eventStore";
+import { notifyCoParents }     from "../../services/notificationService";
+import { validateAmount }      from "../../utils/validation";
+import { showAlert }           from "../../utils/platform";
+import FormInput               from "../../components/FormInput";
 
 export default function Feeding({ navigation }) {
   const { user }                      = useAuth();
-  const { activeBabyId }              = useBaby();
+  const { activeBabyId, activeBaby }  = useBaby();
   const { canWriteEvents }            = usePermissions();
 
   const [amount, setAmount]           = useState("");
   const [amountError, setAmountError] = useState(null);
+  const [notes, setNotes]             = useState("");
   const [saving, setSaving]           = useState(false);
   const isSubmitting                  = useRef(false);
 
@@ -51,9 +54,12 @@ export default function Feeding({ navigation }) {
     setSaving(true);
 
     try {
+      const parsedAmount = parseInt(amount, 10);
       await addEvent(activeBabyId, user.uid, "feeding", {
-        amount: parseInt(amount, 10),
+        amount: parsedAmount,
+        notes: notes.trim() || null,
       });
+      notifyCoParents(activeBaby, user.uid, user.displayName, "feeding", { amount: parsedAmount });
       navigation.goBack();
     } catch (e) {
       console.error("[Feeding] save error:", e);
@@ -87,6 +93,18 @@ export default function Feeding({ navigation }) {
           error={amountError}
           autoFocus
           keyboardType="numeric"
+        />
+
+        <TextInput
+          style={styles.notesInput}
+          value={notes}
+          onChangeText={setNotes}
+          placeholder="Notes (optional)"
+          placeholderTextColor="#bbb"
+          multiline
+          numberOfLines={3}
+          keyboardType="default"
+          textAlignVertical="top"
         />
 
         <TouchableOpacity
@@ -125,6 +143,19 @@ const styles = StyleSheet.create({
     color: "#1a1a2e",
     textAlign: "center",
     marginBottom: 32,
+  },
+  notesInput: {
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    fontSize: 15,
+    backgroundColor: "#fff",
+    color: "#111",
+    minHeight: 80,
+    marginBottom: 16,
+    textAlignVertical: "top",
   },
   btn: {
     backgroundColor: "#1565c0",

@@ -30,8 +30,7 @@ function formatTime(time) {
  * Uses visible Edit / Delete buttons rather than LongPress because
  * LongPress is unreliable on web. Buttons work on all platforms.
  *
- * Pass onEdit=null to hide the Edit button (used for poop and pee
- * which have no editable fields).
+ * Pass onEdit=null to hide the Edit button.
  */
 export default function EventItem({ item, onEdit, onDelete }) {
   const meta   = EVENT_META[item.type] ?? { icon: "❓", label: item.type, color: "#f5f5f5" };
@@ -47,6 +46,9 @@ export default function EventItem({ item, onEdit, onDelete }) {
         <Text style={styles.type}>{meta.label}</Text>
         {detail ? <Text style={styles.detail}>{detail}</Text> : null}
         <Text style={styles.time}>{formatTime(item.time)}</Text>
+        {item.notes ? (
+          <Text style={styles.notes}>{item.notes}</Text>
+        ) : null}
       </View>
 
       <View style={styles.actions}>
@@ -110,6 +112,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#888",
     marginTop: 3,
+  },
+  notes: {
+    fontSize: 12,
+    color: "#999",
+    fontStyle: "italic",
+    marginTop: 4,
   },
   actions: {
     flexDirection: "row",

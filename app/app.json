@@ -10,6 +10,9 @@
       "web"
     ],
     "sdkVersion": "50.0.0",
+    "splash": {
+      "backgroundColor": "#ffffff"
+    },
     "extra": {
       "eas": {
         "projectId": "717b6f71-410c-4beb-8d21-eb39e0dcde85"
@@ -17,6 +20,9 @@
     },
     "android": {
       "package": "com.noclue365.babytracker"
-    }
+    },
+    "plugins": [
+      "expo-notifications"
+    ]
   }
 }

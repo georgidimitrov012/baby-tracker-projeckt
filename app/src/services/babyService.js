@@ -73,3 +73,8 @@ export async function addParentToBaby(babyId, newUserId) {
     [`members.${newUserId}`]: "parent",
   });
 }
+
+export async function updateBaby(babyId, fields) {
+  const ref = doc(db, "babies", babyId);
+  await updateDoc(ref, fields);
+}

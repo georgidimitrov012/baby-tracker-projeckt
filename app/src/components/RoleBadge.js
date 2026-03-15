@@ -20,13 +20,7 @@ export default function RoleBadge() {
   const { myRole, myRoleLabel } = usePermissions();
 
   if (!myRole) {
-    return (
-      <View style={[styles.badge, { backgroundColor: "#ffebee" }]}>
-        <Text style={[styles.text, { color: "#c62828" }]}>
-          ⚠️ No role — check Firebase members map
-        </Text>
-      </View>
-    );
+    return null;
   }
 
   const colors = ROLE_STYLE[myRole] ?? { bg: "#eee", text: "#333" };

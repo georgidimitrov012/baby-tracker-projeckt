@@ -13,8 +13,8 @@ import { deleteEvent }            from "../../services/eventStore";
 import { showConfirm, showAlert } from "../../utils/platform";
 import EventItem                  from "../../components/EventItem";
 
-// Only these event types have editable fields
-const EDITABLE_TYPES = ["feeding", "sleep"];
+// All event types are now editable (notes field available on all)
+const EDITABLE_TYPES = ["feeding", "sleep", "poop", "pee"];
 
 export default function History({ navigation }) {
   const { activeBabyId }           = useBaby();
@@ -50,6 +50,7 @@ export default function History({ navigation }) {
       type:     item.type,
       amount:   item.amount   ?? null,
       duration: item.duration ?? null,
+      notes:    item.notes    ?? null,
       time:     item.time instanceof Date
         ? item.time.toISOString()
         : new Date(item.time).toISOString(),

@@ -11,6 +11,7 @@ import Pee                 from "../screens/app/Pee";
 import History             from "../screens/app/History";
 import EditEvent           from "../screens/app/EditEvent";
 import BabySelector        from "../screens/app/BabySelector";
+import BabyProfileScreen   from "../screens/app/BabyProfileScreen";
 import PrivacyPolicyScreen from "../screens/legal/PrivacyPolicyScreen";
 import AnalyticsScreen     from "../screens/app/AnalyticsScreen";
 
@@ -71,30 +72,35 @@ export default function AppNavigator() {
         options={{ title: "My Babies" }}
       />
       <Stack.Screen
+        name="BabyProfile"
+        component={BabyProfileScreen}
+        options={{ title: "Baby Profile" }}
+      />
+      <Stack.Screen
         name="PrivacyPolicy"
         component={PrivacyPolicyScreen}
         options={{ title: "Privacy Policy" }}
       />
       <Stack.Screen
-          name="InviteParent"
-          component={InviteParentScreen}
-          options={{ title: "Invite Parent" }}
-        />
-        <Stack.Screen
-          name="Invites"
-          component={InvitesScreen}
-          options={{ title: "Pending Invites" }}
-        />
-        <Stack.Screen
-          name="ManageMembers"
-          component={ManageMembersScreen}
-          options={{ title: "Manage Members" }}
-        />
-        <Stack.Screen
-            name="Analytics"
-            component={AnalyticsScreen}
-            options={{ title: "Analytics" }}
-          />
+        name="InviteParent"
+        component={InviteParentScreen}
+        options={{ title: "Invite Parent" }}
+      />
+      <Stack.Screen
+        name="Invites"
+        component={InvitesScreen}
+        options={{ title: "Pending Invites" }}
+      />
+      <Stack.Screen
+        name="ManageMembers"
+        component={ManageMembersScreen}
+        options={{ title: "Manage Members" }}
+      />
+      <Stack.Screen
+        name="Analytics"
+        component={AnalyticsScreen}
+        options={{ title: "Analytics" }}
+      />
     </Stack.Navigator>
   );
 }

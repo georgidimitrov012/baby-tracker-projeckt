@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { subscribeToAuthState } from "../services/authService";
+import { registerForPushNotifications } from "../services/notificationService";
 
 /**
  * AuthContext provides the current Firebase user to the entire app.
@@ -25,6 +26,9 @@ export function AuthProvider({ children }) {
     const unsubscribe = subscribeToAuthState((firebaseUser) => {
       setUser(firebaseUser);
       setLoading(false);
+      if (firebaseUser) {
+        registerForPushNotifications(firebaseUser.uid).catch(() => {});
+      }
     });
 
     return () => unsubscribe();

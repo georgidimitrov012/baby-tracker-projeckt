@@ -2,21 +2,27 @@ import React, { useState, useRef } from "react";
 import {
   View,
   Text,
+  TextInput,
   TouchableOpacity,
   ActivityIndicator,
   StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
 } from "react-native";
-import { useAuth }        from "../../context/AuthContext";
-import { useBaby }        from "../../context/BabyContext";
-import { usePermissions } from "../../hooks/usePermissions";
-import { addEvent }       from "../../services/eventStore";
-import { showAlert }      from "../../utils/platform";
+import { useAuth }         from "../../context/AuthContext";
+import { useBaby }         from "../../context/BabyContext";
+import { usePermissions }  from "../../hooks/usePermissions";
+import { addEvent }        from "../../services/eventStore";
+import { notifyCoParents } from "../../services/notificationService";
+import { showAlert }       from "../../utils/platform";
 
 export default function Pee({ navigation }) {
-  const { user }           = useAuth();
-  const { activeBabyId }   = useBaby();
-  const { canWriteEvents } = usePermissions();
+  const { user }                     = useAuth();
+  const { activeBabyId, activeBaby } = useBaby();
+  const { canWriteEvents }           = usePermissions();
 
+  const [notes, setNotes]   = useState("");
   const [saving, setSaving] = useState(false);
   const isSubmitting        = useRef(false);
 
@@ -37,7 +43,10 @@ export default function Pee({ navigation }) {
     setSaving(true);
 
     try {
-      await addEvent(activeBabyId, user.uid, "pee");
+      await addEvent(activeBabyId, user.uid, "pee", {
+        notes: notes.trim() || null,
+      });
+      notifyCoParents(activeBaby, user.uid, user.displayName, "pee");
       navigation.goBack();
     } catch (e) {
       console.error("[Pee] save error:", e);
@@ -49,52 +58,81 @@ export default function Pee({ navigation }) {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.emoji}>💧</Text>
-      <Text style={styles.title}>Log a Pee</Text>
-      <Text style={styles.sub}>Tap below to record the time.</Text>
-
-      <TouchableOpacity
-        style={[styles.btn, (saving || !canWriteEvents) && styles.btnDisabled]}
-        onPress={handleSave}
-        disabled={saving || !canWriteEvents}
-        accessibilityRole="button"
-        accessibilityLabel="Confirm pee"
+    <KeyboardAvoidingView
+      style={styles.flex}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+    >
+      <ScrollView
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
       >
-        {saving
-          ? <ActivityIndicator color="#fff" />
-          : <Text style={styles.btnText}>Confirm 💧</Text>
-        }
-      </TouchableOpacity>
+        <Text style={styles.emoji}>💧</Text>
+        <Text style={styles.title}>Log a Pee</Text>
 
-      {!canWriteEvents ? (
-        <Text style={styles.readOnlyNote}>
-          You have read-only access and cannot log events.
-        </Text>
-      ) : null}
-    </View>
+        <TextInput
+          style={styles.notesInput}
+          value={notes}
+          onChangeText={setNotes}
+          placeholder="Notes (optional)"
+          placeholderTextColor="#bbb"
+          multiline
+          numberOfLines={3}
+          keyboardType="default"
+          textAlignVertical="top"
+        />
+
+        <TouchableOpacity
+          style={[styles.btn, (saving || !canWriteEvents) && styles.btnDisabled]}
+          onPress={handleSave}
+          disabled={saving || !canWriteEvents}
+          accessibilityRole="button"
+          accessibilityLabel="Confirm pee"
+        >
+          {saving
+            ? <ActivityIndicator color="#fff" />
+            : <Text style={styles.btnText}>Confirm 💧</Text>
+          }
+        </TouchableOpacity>
+
+        {!canWriteEvents ? (
+          <Text style={styles.readOnlyNote}>
+            You have read-only access and cannot log events.
+          </Text>
+        ) : null}
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
+  flex: { flex: 1 },
   container: {
     flex: 1,
+    padding: 24,
     justifyContent: "center",
     alignItems: "center",
-    padding: 32,
   },
   emoji: { fontSize: 64, marginBottom: 12 },
   title: {
     fontSize: 24,
     fontWeight: "700",
     color: "#1a1a2e",
-    marginBottom: 8,
+    marginBottom: 24,
   },
-  sub: {
+  notesInput: {
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
     fontSize: 15,
-    color: "#888",
-    marginBottom: 40,
-    textAlign: "center",
+    backgroundColor: "#fff",
+    color: "#111",
+    minHeight: 80,
+    marginBottom: 24,
+    textAlignVertical: "top",
+    width: "100%",
+    maxWidth: 400,
   },
   btn: {
     backgroundColor: "#00695c",
