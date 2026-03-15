@@ -9,8 +9,17 @@ const EVENT_META = {
 };
 
 function formatDetail(item) {
-  if (item.type === "feeding") return `${item.amount} ml`;
-  if (item.type === "sleep")   return `${item.duration} min`;
+  if (item.type === "feeding") {
+    if (item.feedingType === "breast") {
+      return `Breast · ${item.duration ?? "?"} min`;
+    }
+    const typeLabel = item.feedingType === "formula" ? "Formula" : "Bottle";
+    return `${typeLabel} · ${item.amount ?? "?"} ml`;
+  }
+  if (item.type === "sleep") {
+    const typeLabel = item.sleepType === "night" ? "🌙 Night" : "💤 Nap";
+    return `${typeLabel} · ${item.duration ?? "?"} min`;
+  }
   return null;
 }
 
@@ -27,12 +36,13 @@ function formatTime(time) {
 /**
  * Single row in the History list.
  *
- * Uses visible Edit / Delete buttons rather than LongPress because
- * LongPress is unreliable on web. Buttons work on all platforms.
- *
- * Pass onEdit=null to hide the Edit button.
+ * Props:
+ *   item          - event object
+ *   onEdit        - callback or null to hide Edit button
+ *   onDelete      - callback
+ *   loggedByName  - optional display name for the user who logged the event
  */
-export default function EventItem({ item, onEdit, onDelete }) {
+export default function EventItem({ item, onEdit, onDelete, loggedByName }) {
   const meta   = EVENT_META[item.type] ?? { icon: "❓", label: item.type, color: "#f5f5f5" };
   const detail = formatDetail(item);
 
@@ -49,6 +59,9 @@ export default function EventItem({ item, onEdit, onDelete }) {
         {item.notes ? (
           <Text style={styles.notes}>{item.notes}</Text>
         ) : null}
+        {loggedByName ? (
+          <Text style={styles.loggedBy}>Logged by {loggedByName}</Text>
+        ) : null}
       </View>
 
       <View style={styles.actions}>
@@ -62,13 +75,15 @@ export default function EventItem({ item, onEdit, onDelete }) {
           </TouchableOpacity>
         ) : null}
 
-        <TouchableOpacity
-          onPress={onDelete}
-          style={[styles.btn, styles.deleteBtn]}
-          accessibilityLabel={`Delete ${meta.label} event`}
-        >
-          <Text style={styles.deleteText}>Delete</Text>
-        </TouchableOpacity>
+        {onDelete ? (
+          <TouchableOpacity
+            onPress={onDelete}
+            style={[styles.btn, styles.deleteBtn]}
+            accessibilityLabel={`Delete ${meta.label} event`}
+          >
+            <Text style={styles.deleteText}>Delete</Text>
+          </TouchableOpacity>
+        ) : null}
       </View>
     </View>
   );
@@ -118,6 +133,11 @@ const styles = StyleSheet.create({
     color: "#999",
     fontStyle: "italic",
     marginTop: 4,
+  },
+  loggedBy: {
+    fontSize: 11,
+    color: "#aaa",
+    marginTop: 2,
   },
   actions: {
     flexDirection: "row",

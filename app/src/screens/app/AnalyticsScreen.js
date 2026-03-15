@@ -7,12 +7,14 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
+  Platform,
 } from "react-native";
 import { useBaby }          from "../../context/BabyContext";
 import { usePermissions }   from "../../hooks/usePermissions";
 import { useAnalytics, fmtMinutes, fmtTime } from "../../hooks/useAnalytics";
 import MiniBarChart         from "../../components/charts/MiniBarChart";
 import { ROLES }            from "../../utils/permissions";
+import { exportEventsToCsvFile } from "../../utils/csvExport";
 
 // ── Stat card ────────────────────────────────────────────────
 function StatCard({ icon, label, value, sub, color = "#e3f2fd", textColor = "#1565c0" }) {
@@ -36,11 +38,24 @@ export default function AnalyticsScreen() {
   const { myRole }                   = usePermissions();
 
   const [range, setRange]            = useState(7); // 7 or 30
+  const [exporting, setExporting]    = useState(false);
 
-  const { stats, loading, error, refresh } = useAnalytics(activeBabyId, range);
+  const { stats, insights, events, loading, error, refresh } = useAnalytics(activeBabyId, range);
   const [refreshing, setRefreshing]        = useState(false);
 
   const isPediatrician = myRole === ROLES.PEDIATRICIAN;
+
+  const handleExport = async () => {
+    if (Platform.OS === "web") return;
+    setExporting(true);
+    try {
+      await exportEventsToCsvFile(events, activeBaby?.name ?? "baby");
+    } catch (e) {
+      console.error("[Analytics] export error:", e);
+    } finally {
+      setExporting(false);
+    }
+  };
 
   async function onRefresh() {
     setRefreshing(true);
@@ -85,8 +100,25 @@ export default function AnalyticsScreen() {
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
     >
-      {/* Baby name + pediatrician notice */}
-      <Text style={styles.babyTitle}>{activeBaby.name}</Text>
+      {/* Baby name + export button */}
+      <View style={styles.titleRow}>
+        <Text style={styles.babyTitle}>{activeBaby.name}</Text>
+        {Platform.OS !== "web" ? (
+          <TouchableOpacity
+            style={[styles.exportBtn, exporting && styles.exportBtnDisabled]}
+            onPress={handleExport}
+            disabled={exporting}
+            accessibilityRole="button"
+            accessibilityLabel="Export to CSV"
+          >
+            {exporting
+              ? <ActivityIndicator size="small" color="#1565c0" />
+              : <Text style={styles.exportBtnText}>📤 Export CSV</Text>
+            }
+          </TouchableOpacity>
+        ) : null}
+      </View>
+      {/* Pediatrician notice */}
       {isPediatrician ? (
         <View style={styles.pediBanner}>
           <Text style={styles.pediBannerText}>
@@ -220,6 +252,66 @@ export default function AnalyticsScreen() {
         <Text style={styles.chartNote}>minutes per day · today is rightmost bar</Text>
       </View>
 
+      {/* ── Sleep breakdown ──────────────────────────────── */}
+      {(stats.avgNapDuration > 0 || stats.avgNightDuration > 0) ? (
+        <>
+          <SectionHeader title="Sleep Breakdown" />
+          <View style={styles.cardRow}>
+            <View style={[styles.summaryCard, { flex: 1 }]}>
+              <Text style={styles.summaryValue}>{fmtMinutes(stats.avgNapDuration)}</Text>
+              <Text style={styles.summaryLabel}>Avg nap</Text>
+            </View>
+            <View style={[styles.summaryCard, { flex: 1 }]}>
+              <Text style={styles.summaryValue}>{fmtMinutes(stats.avgNightDuration)}</Text>
+              <Text style={styles.summaryLabel}>Avg night</Text>
+            </View>
+            <View style={[styles.summaryCard, { flex: 1 }]}>
+              <Text style={styles.summaryValue}>{fmtMinutes(stats.todayNapTotal)}</Text>
+              <Text style={styles.summaryLabel}>Today naps</Text>
+            </View>
+          </View>
+        </>
+      ) : null}
+
+      {/* ── Insights ─────────────────────────────────────── */}
+      {!isPediatrician ? (
+        <>
+          <SectionHeader title="Insights" />
+          <View style={styles.cardRow}>
+            <View style={[styles.summaryCard, { flex: 1 }]}>
+              <Text style={styles.summaryValue}>
+                {insights.avgFeedingGapMin != null ? fmtMinutes(insights.avgFeedingGapMin) : "—"}
+              </Text>
+              <Text style={styles.summaryLabel}>Avg gap between feedings</Text>
+            </View>
+            <View style={[styles.summaryCard, { flex: 1 }]}>
+              <Text style={styles.summaryValue}>
+                {insights.avgSleepOnsetAfterFeedingMin != null
+                  ? fmtMinutes(insights.avgSleepOnsetAfterFeedingMin)
+                  : "—"}
+              </Text>
+              <Text style={styles.summaryLabel}>Sleep after feeding</Text>
+            </View>
+          </View>
+          {insights.sleepTrendPercent != null ? (
+            <View style={styles.insightTrend}>
+              <Text style={styles.trendIcon}>
+                {insights.sleepTrendDirection === "up" ? "↑" : insights.sleepTrendDirection === "down" ? "↓" : "→"}
+              </Text>
+              <Text style={styles.trendText}>
+                Weekly sleep{" "}
+                {insights.sleepTrendDirection === "up"
+                  ? `improved +${Math.abs(insights.sleepTrendPercent)}%`
+                  : insights.sleepTrendDirection === "down"
+                    ? `declined ${insights.sleepTrendPercent}%`
+                    : "stable"}{" "}
+                vs last week
+              </Text>
+            </View>
+          ) : null}
+        </>
+      ) : null}
+
       {/* ── Detailed table — hidden for pediatricians ─────── */}
       {!isPediatrician ? (
         <>
@@ -270,7 +362,35 @@ const styles = StyleSheet.create({
   loadingText: { color: "#888", fontSize: 14, marginTop: 12 },
   errorText:   { color: "#c62828", fontSize: 14, textAlign: "center" },
 
-  babyTitle: { fontSize: 22, fontWeight: "800", color: "#1a1a2e", marginBottom: 8 },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  babyTitle: { fontSize: 22, fontWeight: "800", color: "#1a1a2e" },
+  exportBtn: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    backgroundColor: "#e3f2fd",
+    borderRadius: 8,
+    minWidth: 44,
+    alignItems: "center",
+  },
+  exportBtnDisabled: { opacity: 0.5 },
+  exportBtnText: { fontSize: 12, color: "#1565c0", fontWeight: "600" },
+
+  insightTrend: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#e8f5e9",
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 4,
+    gap: 8,
+  },
+  trendIcon: { fontSize: 20, fontWeight: "700", color: "#2e7d32" },
+  trendText: { fontSize: 13, color: "#2e7d32", fontWeight: "500", flex: 1 },
 
   pediBanner: {
     backgroundColor: "#e8f5e9",

@@ -78,3 +78,12 @@ export async function updateBaby(babyId, fields) {
   const ref = doc(db, "babies", babyId);
   await updateDoc(ref, fields);
 }
+
+export async function updateBabySettings(babyId, settings) {
+  const ref = doc(db, "babies", babyId);
+  const settingsFields = {};
+  for (const [key, value] of Object.entries(settings)) {
+    settingsFields[`settings.${key}`] = value;
+  }
+  await updateDoc(ref, settingsFields);
+}

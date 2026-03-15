@@ -91,9 +91,10 @@ export function useAnalytics(babyId, days = 30) {
   }
 
   // ── Computed stats — recalculated only when events changes ──
-  const stats = useMemo(() => computeStats(events, days), [events, days]);
+  const stats    = useMemo(() => computeStats(events, days), [events, days]);
+  const insights = useMemo(() => computeInsights(events), [events]);
 
-  return { stats, loading, error, refresh: fetchEvents };
+  return { stats, insights, events, loading, error, refresh: fetchEvents };
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -117,8 +118,14 @@ function computeStats(events, days) {
   // Split by type
   const feedings = events.filter((e) => e.type === "feeding");
   const sleeps   = events.filter((e) => e.type === "sleep" && e.duration > 0);
+  const naps     = sleeps.filter((e) => e.sleepType !== "night");
+  const nights   = sleeps.filter((e) => e.sleepType === "night");
   const poops    = events.filter((e) => e.type === "poop");
   const pees     = events.filter((e) => e.type === "pee");
+
+  // Feeding sub-types
+  const breastFeedings = feedings.filter((e) => e.feedingType === "breast");
+  const bottleFeedings = feedings.filter((e) => e.feedingType !== "breast");
 
   // ── Last 24h ─────────────────────────────────────────────
   const since24h   = new Date(now - oneDayMs);
@@ -137,6 +144,10 @@ function computeStats(events, days) {
 
   const todayFeedTotal  = todayFeeds.reduce((s, e) => s + (e.amount ?? 0), 0);
   const todaySleepTotal = todaySleeps.reduce((s, e) => s + (e.duration ?? 0), 0);
+  const todayNapTotal   = todaySleeps.filter((e) => e.sleepType !== "night").reduce((s, e) => s + (e.duration ?? 0), 0);
+  const todayNightTotal = todaySleeps.filter((e) => e.sleepType === "night").reduce((s, e) => s + (e.duration ?? 0), 0);
+  const todayBreastMin  = todayFeeds.filter((e) => e.feedingType === "breast").reduce((s, e) => s + (e.duration ?? 0), 0);
+  const todayBottleMl   = todayFeeds.filter((e) => e.feedingType !== "breast").reduce((s, e) => s + (e.amount ?? 0), 0);
 
   // ── 7-day daily breakdown (for bar charts) ────────────────
   const last7Days  = buildDailyBuckets(7);
@@ -174,11 +185,22 @@ function computeStats(events, days) {
   const longestSleep = allSleepDurations.length
     ? Math.max(...allSleepDurations)
     : 0;
+  const napDurations   = naps.map((e) => e.duration ?? 0);
+  const nightDurations = nights.map((e) => e.duration ?? 0);
+  const avgNapDuration   = napDurations.length
+    ? Math.round(napDurations.reduce((a, b) => a + b, 0) / napDurations.length)
+    : 0;
+  const avgNightDuration = nightDurations.length
+    ? Math.round(nightDurations.reduce((a, b) => a + b, 0) / nightDurations.length)
+    : 0;
 
   // ── Feeding stats ─────────────────────────────────────────
-  const feedingAmounts = feedings.map((e) => e.amount ?? 0);
+  const feedingAmounts = bottleFeedings.map((e) => e.amount ?? 0);
   const avgFeeding = feedingAmounts.length
     ? Math.round(feedingAmounts.reduce((a, b) => a + b, 0) / feedingAmounts.length)
+    : 0;
+  const avgBreastDuration = breastFeedings.length
+    ? Math.round(breastFeedings.reduce((s, e) => s + (e.duration ?? 0), 0) / breastFeedings.length)
     : 0;
 
   // ── Last event of each type ───────────────────────────────
@@ -188,11 +210,15 @@ function computeStats(events, days) {
   return {
     // Today
     todayFeedTotal,
-    todayFeedCount:  todayFeeds.length,
+    todayFeedCount:   todayFeeds.length,
     todaySleepTotal,
-    todaySleepCount: todaySleeps.length,
-    todayPoopCount:  todayPoops.length,
-    todayPeeCount:   todayPees.length,
+    todaySleepCount:  todaySleeps.length,
+    todayPoopCount:   todayPoops.length,
+    todayPeeCount:    todayPees.length,
+    todayNapTotal,
+    todayNightTotal,
+    todayBreastMin,
+    todayBottleMl,
 
     // Last 24h
     last24FeedTotal,
@@ -202,15 +228,79 @@ function computeStats(events, days) {
     // Sleep
     avgSleep,
     longestSleep,
+    avgNapDuration,
+    avgNightDuration,
     lastSleep,
 
     // Feeding
     avgFeeding,
+    avgBreastDuration,
     lastFeeding,
 
     // Charts data — arrays ordered oldest → newest
     week,   // 7 items
     month,  // 30 items
+  };
+}
+
+// ─────────────────────────────────────────────────────────────
+// PATTERN INSIGHTS — pure computation, no hooks
+// ─────────────────────────────────────────────────────────────
+
+export function computeInsights(events) {
+  const now     = new Date();
+  const sevenDaysAgo     = new Date(now - 7 * 86400000);
+  const fourteenDaysAgo  = new Date(now - 14 * 86400000);
+
+  const recent  = events.filter((e) => e.time >= sevenDaysAgo);
+  const prev    = events.filter((e) => e.time >= fourteenDaysAgo && e.time < sevenDaysAgo);
+
+  const recentFeedings = recent.filter((e) => e.type === "feeding").sort((a, b) => a.time - b.time);
+  const recentSleeps   = recent.filter((e) => e.type === "sleep" && e.duration > 0);
+
+  // 1. Average gap between feedings
+  let avgFeedingGapMin = null;
+  if (recentFeedings.length >= 3) {
+    const gaps = [];
+    for (let i = 1; i < recentFeedings.length; i++) {
+      gaps.push((recentFeedings[i].time - recentFeedings[i - 1].time) / 60000);
+    }
+    avgFeedingGapMin = Math.round(gaps.reduce((a, b) => a + b, 0) / gaps.length);
+  }
+
+  // 2. Average sleep onset after last feeding
+  let avgSleepOnsetAfterFeedingMin = null;
+  if (recentSleeps.length >= 2 && recentFeedings.length >= 2) {
+    const onsets = [];
+    for (const sleep of recentSleeps) {
+      const prevFeed = [...recentFeedings].reverse().find((f) => f.time < sleep.time);
+      if (prevFeed) {
+        const onset = (sleep.time - prevFeed.time) / 60000;
+        if (onset > 0 && onset < 300) onsets.push(onset); // cap at 5h to avoid outliers
+      }
+    }
+    if (onsets.length >= 2) {
+      avgSleepOnsetAfterFeedingMin = Math.round(onsets.reduce((a, b) => a + b, 0) / onsets.length);
+    }
+  }
+
+  // 3. Weekly sleep trend
+  let sleepTrendPercent = null;
+  let sleepTrendDirection = "stable";
+  const recentSleepTotal = recentSleeps.reduce((s, e) => s + (e.duration ?? 0), 0);
+  const prevSleeps       = prev.filter((e) => e.type === "sleep" && e.duration > 0);
+  const prevSleepTotal   = prevSleeps.reduce((s, e) => s + (e.duration ?? 0), 0);
+  if (prevSleepTotal > 0) {
+    sleepTrendPercent = Math.round(((recentSleepTotal - prevSleepTotal) / prevSleepTotal) * 100);
+    if (sleepTrendPercent > 5) sleepTrendDirection = "up";
+    else if (sleepTrendPercent < -5) sleepTrendDirection = "down";
+  }
+
+  return {
+    avgFeedingGapMin,
+    avgSleepOnsetAfterFeedingMin,
+    sleepTrendPercent,
+    sleepTrendDirection,
   };
 }
 

@@ -36,3 +36,47 @@ export function validateDuration(value) {
   }
   return { valid: true, error: null };
 }
+
+export function validateFeedingDuration(value) {
+  const n = Number(value);
+  if (!value || String(value).trim() === "") {
+    return { valid: false, error: "Duration is required." };
+  }
+  if (isNaN(n) || !Number.isInteger(n)) {
+    return { valid: false, error: "Duration must be a whole number." };
+  }
+  if (n <= 0) {
+    return { valid: false, error: "Duration must be greater than 0." };
+  }
+  if (n > 120) {
+    return { valid: false, error: "Duration seems too long (max 120 min)." };
+  }
+  return { valid: true, error: null };
+}
+
+export function validateWeight(value) {
+  const n = Number(value);
+  if (!value || String(value).trim() === "") {
+    return { valid: false, error: "Weight is required." };
+  }
+  if (isNaN(n)) {
+    return { valid: false, error: "Weight must be a number." };
+  }
+  if (n < 0.5) {
+    return { valid: false, error: "Weight must be at least 0.5 kg." };
+  }
+  if (n > 30) {
+    return { valid: false, error: "Weight seems too high (max 30 kg)." };
+  }
+  return { valid: true, error: null };
+}
+
+export function validateMilestoneTitle(value) {
+  if (!value || String(value).trim() === "") {
+    return { valid: false, error: "Title is required." };
+  }
+  if (value.trim().length > 100) {
+    return { valid: false, error: "Title must be 100 characters or fewer." };
+  }
+  return { valid: true, error: null };
+}

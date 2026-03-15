@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Image,
 } from "react-native";
 import { useBaby }    from "../../context/BabyContext";
 import { showAlert }  from "../../utils/platform";
@@ -109,7 +110,10 @@ export default function BabySelector({ navigation }) {
                 accessibilityRole="button"
                 accessibilityLabel={`Select ${baby.name}`}
               >
-                <Text style={styles.babyIcon}>👶</Text>
+                {baby.photoURL
+                  ? <Image source={{ uri: baby.photoURL }} style={styles.babyPhoto} />
+                  : <Text style={styles.babyIcon}>👶</Text>
+                }
                 <View style={styles.babyInfo}>
                   <Text style={[styles.babyName, isActive && styles.babyNameActive]}>
                     {baby.name}
@@ -205,6 +209,12 @@ const styles = StyleSheet.create({
   },
   babyIcon: {
     fontSize: 22,
+    marginRight: 12,
+  },
+  babyPhoto: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     marginRight: 12,
   },
   babyInfo: {

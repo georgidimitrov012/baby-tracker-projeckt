@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   View,
   Text,
@@ -9,17 +9,24 @@ import {
 import { useBaby }                from "../../context/BabyContext";
 import { usePermissions }         from "../../hooks/usePermissions";
 import { useEvents }              from "../../hooks/useEvents";
+import { useUserDisplayNames }    from "../../hooks/useUserDisplayNames";
 import { deleteEvent }            from "../../services/eventStore";
 import { showConfirm, showAlert } from "../../utils/platform";
 import EventItem                  from "../../components/EventItem";
 
-// All event types are now editable (notes field available on all)
 const EDITABLE_TYPES = ["feeding", "sleep", "poop", "pee"];
 
 export default function History({ navigation }) {
   const { activeBabyId }           = useBaby();
   const { canWriteEvents }         = usePermissions();
   const { events, loading, error } = useEvents(activeBabyId);
+
+  // Resolve loggedBy UIDs to display names
+  const uids = useMemo(
+    () => [...new Set(events.map((e) => e.loggedBy).filter(Boolean))],
+    [events]
+  );
+  const { nameMap } = useUserDisplayNames(uids);
 
   const handleDelete = async (item) => {
     if (!canWriteEvents) {
@@ -46,12 +53,14 @@ export default function History({ navigation }) {
       return;
     }
     navigation.navigate("EditEvent", {
-      eventId:  item.id,
-      type:     item.type,
-      amount:   item.amount   ?? null,
-      duration: item.duration ?? null,
-      notes:    item.notes    ?? null,
-      time:     item.time instanceof Date
+      eventId:     item.id,
+      type:        item.type,
+      feedingType: item.feedingType ?? "bottle",
+      sleepType:   item.sleepType   ?? "nap",
+      amount:      item.amount      ?? null,
+      duration:    item.duration    ?? null,
+      notes:       item.notes       ?? null,
+      time:        item.time instanceof Date
         ? item.time.toISOString()
         : new Date(item.time).toISOString(),
     });
@@ -93,6 +102,7 @@ export default function History({ navigation }) {
         renderItem={({ item }) => (
           <EventItem
             item={item}
+            loggedByName={nameMap[item.loggedBy]}
             onDelete={canWriteEvents ? () => handleDelete(item) : null}
             onEdit={
               canWriteEvents && EDITABLE_TYPES.includes(item.type)

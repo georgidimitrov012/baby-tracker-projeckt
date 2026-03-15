@@ -56,7 +56,7 @@ export function useSleepTimer() {
     return () => clearInterval(intervalRef.current);
   }, [isActive, startedAt?.getTime()]);
 
-  const handleStart = async () => {
+  const handleStart = async (sleepType = "nap") => {
     if (isSubmitting.current || !canWriteEvents) return;
     if (!activeBabyId) {
       showAlert("No baby selected", "Please select a baby first.");
@@ -65,7 +65,7 @@ export function useSleepTimer() {
     isSubmitting.current = true;
     setStarting(true);
     try {
-      await startSleep(activeBabyId, user.uid);
+      await startSleep(activeBabyId, user.uid, sleepType);
       // BabyContext onSnapshot will update activeSleepStart automatically
     } catch (e) {
       console.error("[useSleepTimer] start error:", e);
@@ -81,7 +81,8 @@ export function useSleepTimer() {
     isSubmitting.current = true;
     setStopping(true);
     try {
-      await stopSleep(activeBabyId, user.uid, startedAt);
+      const sleepType = activeBaby?.activeSleepType ?? "nap";
+      await stopSleep(activeBabyId, user.uid, startedAt, sleepType);
       // BabyContext onSnapshot will clear activeSleepStart automatically
     } catch (e) {
       console.error("[useSleepTimer] stop error:", e);

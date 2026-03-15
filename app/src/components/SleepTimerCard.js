@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -13,10 +13,8 @@ import { usePermissions }               from "../hooks/usePermissions";
  * SleepTimerCard
  *
  * Shows:
- *  - When ACTIVE:  live elapsed time, start time, stop button (if permitted)
- *  - When INACTIVE: start button (if permitted) or empty (for read-only roles)
- *
- * Used on both Dashboard (compact) and Sleep screen (full).
+ *  - When ACTIVE:  live elapsed time, start time, sleep type badge, stop button (if permitted)
+ *  - When INACTIVE: nap/night picker + start button (if permitted)
  *
  * Props:
  *   compact {boolean} - smaller layout for Dashboard
@@ -33,6 +31,7 @@ export default function SleepTimerCard({ compact = false }) {
   } = useSleepTimer();
 
   const { canWriteEvents } = usePermissions();
+  const [sleepType, setSleepType] = useState("nap");
 
   const startTimeStr = startedAt
     ? startedAt.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })
@@ -79,27 +78,44 @@ export default function SleepTimerCard({ compact = false }) {
         </>
       ) : (
         <>
-          <Text style={[styles.label, compact && styles.labelSmall]}>
+          <Text style={[styles.label, styles.labelInactive, compact && styles.labelSmall]}>
             😴 Sleep Tracker
           </Text>
           {!compact ? (
             <Text style={styles.hint}>
-              Tap Start when your baby falls asleep.
+              Select type and tap Start when your baby falls asleep.
             </Text>
           ) : null}
           {canWriteEvents ? (
-            <TouchableOpacity
-              style={[styles.btn, styles.startBtn, starting && styles.btnDisabled]}
-              onPress={handleStart}
-              disabled={starting}
-              accessibilityRole="button"
-              accessibilityLabel="Start sleep timer"
-            >
-              {starting
-                ? <ActivityIndicator color="#fff" size="small" />
-                : <Text style={styles.btnText}>▶  Start Sleep</Text>
-              }
-            </TouchableOpacity>
+            <>
+              <View style={styles.typeRow}>
+                {["nap", "night"].map((t) => (
+                  <TouchableOpacity
+                    key={t}
+                    style={[styles.typeBtn, sleepType === t && styles.typeBtnActive]}
+                    onPress={() => setSleepType(t)}
+                    accessibilityRole="button"
+                    accessibilityLabel={t === "nap" ? "Nap" : "Night sleep"}
+                  >
+                    <Text style={[styles.typeBtnText, sleepType === t && styles.typeBtnTextActive]}>
+                      {t === "nap" ? "💤 Nap" : "🌙 Night"}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <TouchableOpacity
+                style={[styles.btn, styles.startBtn, starting && styles.btnDisabled]}
+                onPress={() => handleStart(sleepType)}
+                disabled={starting}
+                accessibilityRole="button"
+                accessibilityLabel="Start sleep timer"
+              >
+                {starting
+                  ? <ActivityIndicator color="#fff" size="small" />
+                  : <Text style={styles.btnText}>▶  Start Sleep</Text>
+                }
+              </TouchableOpacity>
+            </>
           ) : null}
         </>
       )}
@@ -138,6 +154,9 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color:      "#fff",
   },
+  labelInactive: {
+    color: "#6a1b9a",
+  },
   labelSmall: {
     fontSize: 14,
   },
@@ -156,8 +175,34 @@ const styles = StyleSheet.create({
     color:    "#b39ddb",
   },
   hint: {
-    fontSize: 14,
+    fontSize: 13,
     color:    "#6a1b9a",
+  },
+  typeRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  typeBtn: {
+    flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    backgroundColor: "rgba(106,27,154,0.1)",
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "transparent",
+  },
+  typeBtnActive: {
+    backgroundColor: "#ede7f6",
+    borderColor: "#6a1b9a",
+  },
+  typeBtnText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#6a1b9a",
+  },
+  typeBtnTextActive: {
+    color: "#4527a0",
   },
   btn: {
     borderRadius:   12,

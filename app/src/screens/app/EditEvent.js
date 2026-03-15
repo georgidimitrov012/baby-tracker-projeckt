@@ -10,12 +10,15 @@ import {
   Platform,
   ScrollView,
 } from "react-native";
-import { useBaby }                          from "../../context/BabyContext";
-import { usePermissions }                   from "../../hooks/usePermissions";
-import { updateEvent }                      from "../../services/eventStore";
-import { validateAmount, validateDuration } from "../../utils/validation";
-import { showAlert }                        from "../../utils/platform";
-import FormInput                            from "../../components/FormInput";
+import { useBaby }                                           from "../../context/BabyContext";
+import { usePermissions }                                    from "../../hooks/usePermissions";
+import { updateEvent }                                       from "../../services/eventStore";
+import { validateAmount, validateDuration, validateFeedingDuration } from "../../utils/validation";
+import { showAlert }                                         from "../../utils/platform";
+import FormInput                                             from "../../components/FormInput";
+
+const SLEEP_TYPE_LABELS = { nap: "💤 Nap", night: "🌙 Night" };
+const FEEDING_TYPE_LABELS = { breast: "🤱 Breast", bottle: "🍼 Bottle", formula: "🥛 Formula" };
 
 export default function EditEvent({ route, navigation }) {
   const { activeBabyId }   = useBaby();
@@ -24,26 +27,31 @@ export default function EditEvent({ route, navigation }) {
   const {
     eventId,
     type,
-    amount:   initAmount,
-    duration: initDuration,
-    notes:    initNotes,
+    feedingType: initFeedingType,
+    sleepType:   initSleepType,
+    amount:      initAmount,
+    duration:    initDuration,
+    notes:       initNotes,
   } = route.params;
 
-  const isFeeding = type === "feeding";
-  const isSleep   = type === "sleep";
+  const isFeeding      = type === "feeding";
+  const isSleep        = type === "sleep";
+  const isBreastFeed   = isFeeding && initFeedingType === "breast";
   const hasNumericField = isFeeding || isSleep;
 
-  const label     = isFeeding ? "Amount"   : "Duration";
-  const unit      = isFeeding ? "ml"       : "min";
-  const icon      = isFeeding ? "🍼"       : isSleep ? "😴" : type === "poop" ? "💩" : "💧";
-  const validate  = isFeeding ? validateAmount : validateDuration;
+  const label    = isBreastFeed ? "Duration" : isFeeding ? "Amount" : "Duration";
+  const unit     = isBreastFeed ? "min"      : isFeeding ? "ml"     : "min";
+  const icon     = isFeeding ? "🍼" : isSleep ? "😴" : type === "poop" ? "💩" : "💧";
+  const validate = isBreastFeed ? validateFeedingDuration : isFeeding ? validateAmount : validateDuration;
 
   const [value, setValue]           = useState(
-    isFeeding
-      ? String(initAmount   ?? "")
-      : isSleep
-        ? String(initDuration ?? "")
-        : ""
+    isBreastFeed
+      ? String(initDuration ?? "")
+      : isFeeding
+        ? String(initAmount   ?? "")
+        : isSleep
+          ? String(initDuration ?? "")
+          : ""
   );
   const [fieldError, setFieldError] = useState(null);
   const [notes, setNotes]           = useState(initNotes ?? "");
@@ -73,7 +81,9 @@ export default function EditEvent({ route, navigation }) {
     try {
       let fields = { notes: notes.trim() || null };
 
-      if (isFeeding) {
+      if (isBreastFeed) {
+        fields.duration = parseInt(value, 10);
+      } else if (isFeeding) {
         fields.amount = parseInt(value, 10);
       } else if (isSleep) {
         fields.duration = parseInt(value, 10);
@@ -105,6 +115,22 @@ export default function EditEvent({ route, navigation }) {
             {type.charAt(0).toUpperCase() + type.slice(1)}
           </Text>
         </Text>
+
+        {/* Show feeding/sleep type as a read-only badge */}
+        {isFeeding && initFeedingType ? (
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>
+              {FEEDING_TYPE_LABELS[initFeedingType] ?? initFeedingType}
+            </Text>
+          </View>
+        ) : null}
+        {isSleep && initSleepType ? (
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>
+              {SLEEP_TYPE_LABELS[initSleepType] ?? initSleepType}
+            </Text>
+          </View>
+        ) : null}
 
         {hasNumericField ? (
           <FormInput
@@ -170,11 +196,24 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: "#666",
     textAlign: "center",
-    marginBottom: 32,
+    marginBottom: 8,
   },
   typeLabel: {
     fontWeight: "700",
     color: "#1a1a2e",
+  },
+  badge: {
+    alignSelf: "center",
+    backgroundColor: "#e3f2fd",
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 5,
+    marginBottom: 24,
+  },
+  badgeText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#1565c0",
   },
   notesLabel: {
     fontSize: 13,

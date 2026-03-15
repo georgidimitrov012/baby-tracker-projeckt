@@ -9,18 +9,20 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Image,
 } from "react-native";
 import { Timestamp, deleteDoc, doc } from "firebase/firestore";
 import { useBaby }          from "../../context/BabyContext";
 import { usePermissions }   from "../../hooks/usePermissions";
 import { updateBaby }       from "../../services/babyService";
 import { db }               from "../../services/firebase";
+import { uploadBabyPhoto }  from "../../services/storageService";
+import { pickAndEncodePhoto } from "../../utils/imageUpload";
 import { showAlert, showConfirm } from "../../utils/platform";
 import FormInput            from "../../components/FormInput";
 
 function formatDateToString(birthDate) {
   if (!birthDate) return "";
-  // birthDate may be a Firestore Timestamp or a JS Date
   const d = typeof birthDate.toDate === "function"
     ? birthDate.toDate()
     : birthDate instanceof Date
@@ -48,6 +50,7 @@ export default function BabyProfileScreen({ route, navigation }) {
   const [nameError, setNameError] = useState(null);
   const [saving, setSaving]       = useState(false);
   const [deleting, setDeleting]   = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const isSubmitting              = useRef(false);
 
   const handleSave = async () => {
@@ -95,6 +98,26 @@ export default function BabyProfileScreen({ route, navigation }) {
     }
   };
 
+  const handleChangePhoto = async () => {
+    if (!canEditBaby) {
+      showAlert("Permission denied", "You need admin or owner access to change the photo.");
+      return;
+    }
+    setUploadingPhoto(true);
+    try {
+      const result = await pickAndEncodePhoto();
+      if (result.cancelled) return;
+      if (result.error) { showAlert("Error", result.error); return; }
+      const url = await uploadBabyPhoto(babyId, result.base64);
+      await updateBaby(babyId, { photoURL: url });
+    } catch (e) {
+      console.error("[BabyProfile] photo upload error:", e);
+      showAlert("Error", "Could not upload photo. Please try again.");
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
   const handleDelete = async () => {
     if (!canDeleteBaby) {
       showAlert("Permission denied", "You don't have permission to delete this baby.");
@@ -110,7 +133,6 @@ export default function BabyProfileScreen({ route, navigation }) {
     setDeleting(true);
     try {
       await deleteDoc(doc(db, "babies", babyId));
-      // Navigate back twice: back from BabyProfile → back from BabySelector
       navigation.goBack();
       navigation.goBack();
     } catch (e) {
@@ -137,7 +159,31 @@ export default function BabyProfileScreen({ route, navigation }) {
         contentContainerStyle={styles.container}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={styles.title}>Baby Profile 👶</Text>
+        {/* Photo */}
+        <View style={styles.photoSection}>
+          {baby.photoURL ? (
+            <Image source={{ uri: baby.photoURL }} style={styles.photo} />
+          ) : (
+            <View style={styles.photoPlaceholder}>
+              <Text style={styles.photoEmoji}>👶</Text>
+            </View>
+          )}
+          {canEditBaby ? (
+            <TouchableOpacity
+              style={[styles.photoBtn, uploadingPhoto && styles.btnDisabled]}
+              onPress={handleChangePhoto}
+              disabled={uploadingPhoto}
+              accessibilityRole="button"
+            >
+              {uploadingPhoto
+                ? <ActivityIndicator size="small" color="#1565c0" />
+                : <Text style={styles.photoBtnText}>📷 Change Photo</Text>
+              }
+            </TouchableOpacity>
+          ) : null}
+        </View>
+
+        <Text style={styles.title}>Baby Profile</Text>
 
         <FormInput
           label="Name"
@@ -188,6 +234,15 @@ export default function BabyProfileScreen({ route, navigation }) {
           </Text>
         )}
 
+        {/* Growth chart shortcut */}
+        <TouchableOpacity
+          style={styles.growthBtn}
+          onPress={() => navigation.navigate("Growth", { babyId })}
+          accessibilityRole="button"
+        >
+          <Text style={styles.growthBtnText}>📏 View Growth Chart</Text>
+        </TouchableOpacity>
+
         {canDeleteBaby ? (
           <TouchableOpacity
             style={[styles.deleteBtn, deleting && styles.btnDisabled]}
@@ -224,12 +279,40 @@ const styles = StyleSheet.create({
     color: "#c62828",
     textAlign: "center",
   },
+  photoSection: {
+    alignItems: "center",
+    marginBottom: 20,
+    gap: 10,
+  },
+  photo: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    borderWidth: 3,
+    borderColor: "#e3f2fd",
+  },
+  photoPlaceholder: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: "#e3f2fd",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  photoEmoji: { fontSize: 46 },
+  photoBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    backgroundColor: "#e3f2fd",
+    borderRadius: 20,
+  },
+  photoBtnText: { fontSize: 13, color: "#1565c0", fontWeight: "600" },
   title: {
     fontSize: 22,
     fontWeight: "700",
     color: "#1a1a2e",
     textAlign: "center",
-    marginBottom: 32,
+    marginBottom: 24,
   },
   saveBtn: {
     backgroundColor: "#1565c0",
@@ -244,6 +327,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
   },
+  growthBtn: {
+    backgroundColor: "#e8f5e9",
+    borderRadius: 12,
+    padding: 14,
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  growthBtnText: { fontSize: 15, color: "#2e7d32", fontWeight: "600" },
   deleteBtn: {
     backgroundColor: "#c62828",
     borderRadius: 12,

@@ -46,10 +46,11 @@ import { db } from "./firebase";
  * @param {string} userId
  * @returns {Promise<void>}
  */
-export async function startSleep(babyId, userId) {
+export async function startSleep(babyId, userId, sleepType = "nap") {
   await updateDoc(doc(db, "babies", babyId), {
     activeSleepStart:     serverTimestamp(),
     activeSleepStartedBy: userId,
+    activeSleepType:      sleepType,
   });
 }
 
@@ -61,13 +62,14 @@ export async function startSleep(babyId, userId) {
  * @param {Date}   startTime   - the activeSleepStart value from the baby doc
  * @returns {Promise<void>}
  */
-export async function stopSleep(babyId, userId, startTime) {
+export async function stopSleep(babyId, userId, startTime, sleepType = "nap") {
   const endTime  = new Date();
   const duration = Math.max(1, Math.round((endTime - startTime) / 60000)); // minutes, min 1
 
   // Save completed event
   await addDoc(collection(db, "babies", babyId, "events"), {
     type:      "sleep",
+    sleepType,
     time:      startTime,
     start:     startTime.toISOString(),
     end:       endTime.toISOString(),
@@ -81,5 +83,6 @@ export async function stopSleep(babyId, userId, startTime) {
   await updateDoc(doc(db, "babies", babyId), {
     activeSleepStart:     null,
     activeSleepStartedBy: null,
+    activeSleepType:      null,
   });
 }

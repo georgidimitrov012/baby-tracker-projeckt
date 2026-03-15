@@ -14,6 +14,7 @@ import { usePermissions }         from "../../hooks/usePermissions";
 import { useSleepTimer }          from "../../hooks/useSleepTimer";
 import RoleBadge                  from "../../components/RoleBadge";
 import SleepTimerCard             from "../../components/SleepTimerCard";
+import OfflineBanner              from "../../components/OfflineBanner";
 import { showConfirm, showAlert } from "../../utils/platform";
 import { addEvent }               from "../../services/eventStore";
 import { notifyCoParents }        from "../../services/notificationService";
@@ -29,7 +30,9 @@ const WRITE_BUTTONS = [
 const READ_BUTTONS = [
   { screen: "Analytics",     icon: "📊", label: "Analytics",      color: "#e8f5e9", text: "#2e7d32" },
   { screen: "History",       icon: "📋", label: "History",        color: "#fafafa", text: "#444"    },
-  { screen: "Invites",       icon: "📬", label: "Invites",        color: "#fce4ec", text: "#880e4f" },
+  { screen: "Growth",        icon: "📏", label: "Growth",         color: "#e8eaf6", text: "#3949ab" },
+  { screen: "Milestones",    icon: "🎯", label: "Milestones",     color: "#fce4ec", text: "#880e4f" },
+  { screen: "Invites",       icon: "📬", label: "Invites",        color: "#fff3e0", text: "#e65100" },
   { screen: "ManageMembers", icon: "👥", label: "Manage Members", color: "#ede7f6", text: "#4527a0" },
 ];
 
@@ -93,17 +96,29 @@ export default function Dashboard({ navigation }) {
           <Text style={styles.greeting}>Hello, {user?.displayName ?? "there"} 👋</Text>
           <Text style={styles.sub}>What happened?</Text>
         </View>
-        <TouchableOpacity
-          onPress={handleLogout}
-          disabled={loggingOut}
-          style={styles.logoutBtn}
-        >
-          {loggingOut
-            ? <ActivityIndicator size="small" color="#888" />
-            : <Text style={styles.logoutText}>Sign out</Text>
-          }
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate("Settings")}
+            style={styles.iconBtn}
+            accessibilityRole="button"
+            accessibilityLabel="Settings"
+          >
+            <Text style={styles.iconBtnText}>⚙️</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={handleLogout}
+            disabled={loggingOut}
+            style={styles.logoutBtn}
+          >
+            {loggingOut
+              ? <ActivityIndicator size="small" color="#888" />
+              : <Text style={styles.logoutText}>Sign out</Text>
+            }
+          </TouchableOpacity>
+        </View>
       </View>
+
+      <OfflineBanner />
 
       {/* Baby selector pill */}
       <TouchableOpacity
@@ -209,6 +224,20 @@ const styles = StyleSheet.create({
   },
   greeting: { fontSize: 20, fontWeight: "700", color: "#1a1a2e" },
   sub: { fontSize: 14, color: "#888", marginTop: 2 },
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  iconBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#f5f5f5",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  iconBtnText: { fontSize: 18 },
   logoutBtn: {
     paddingVertical: 6,
     paddingHorizontal: 12,

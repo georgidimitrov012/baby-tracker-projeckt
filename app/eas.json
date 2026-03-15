@@ -9,7 +9,8 @@
       "distribution": "internal"
     },
     "preview": {
-      "distribution": "internal"
+      "distribution": "internal",
+      "prebuildCommand": "npm test -- --watchAll=false --forceExit --passWithNoTests=false"
     },
     "production": {
       "autoIncrement": true

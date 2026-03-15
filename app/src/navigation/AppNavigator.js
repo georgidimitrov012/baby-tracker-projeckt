@@ -14,6 +14,9 @@ import BabySelector        from "../screens/app/BabySelector";
 import BabyProfileScreen   from "../screens/app/BabyProfileScreen";
 import PrivacyPolicyScreen from "../screens/legal/PrivacyPolicyScreen";
 import AnalyticsScreen     from "../screens/app/AnalyticsScreen";
+import SettingsScreen      from "../screens/app/SettingsScreen";
+import GrowthScreen        from "../screens/app/GrowthScreen";
+import MilestonesScreen    from "../screens/app/MilestonesScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -100,6 +103,21 @@ export default function AppNavigator() {
         name="Analytics"
         component={AnalyticsScreen}
         options={{ title: "Analytics" }}
+      />
+      <Stack.Screen
+        name="Settings"
+        component={SettingsScreen}
+        options={{ title: "Settings" }}
+      />
+      <Stack.Screen
+        name="Growth"
+        component={GrowthScreen}
+        options={{ title: "Growth" }}
+      />
+      <Stack.Screen
+        name="Milestones"
+        component={MilestonesScreen}
+        options={{ title: "Milestones" }}
       />
     </Stack.Navigator>
   );
