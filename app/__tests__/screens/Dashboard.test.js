@@ -1,5 +1,8 @@
 jest.mock('../../src/services/firebase', () => ({ db: {}, auth: {} }));
-jest.mock('firebase/firestore', () => ({}));
+jest.mock('firebase/firestore', () => ({
+  updateDoc: jest.fn(() => Promise.resolve()),
+  doc: jest.fn(),
+}));
 
 // Context mocks
 jest.mock('../../src/context/AuthContext', () => ({
@@ -24,12 +27,15 @@ jest.mock('../../src/hooks/useEvents', () => ({
 jest.mock('../../src/hooks/useReminders', () => ({
   useReminders: jest.fn(),
 }));
+jest.mock('../../src/hooks/useNapPredictor', () => ({
+  useNapPredictor: jest.fn(() => ({ nextNapIn: null, wakeWindowMinutes: null, recommendation: null, overdue: false })),
+}));
 
 // Service mocks
 const mockAddEvent = jest.fn(() => Promise.resolve('event-id'));
 jest.mock('../../src/services/eventStore', () => ({ addEvent: mockAddEvent }));
 jest.mock('../../src/services/authService', () => ({ logoutUser: jest.fn(() => Promise.resolve()) }));
-jest.mock('../../src/services/notificationService', () => ({ notifyCoParents: jest.fn() }));
+jest.mock('../../src/services/notificationService', () => ({ notifyCoParents: jest.fn(), scheduleDailyDigest: jest.fn(() => Promise.resolve()) }));
 
 // UI mocks
 jest.mock('../../src/components/RoleBadge', () => () => null);

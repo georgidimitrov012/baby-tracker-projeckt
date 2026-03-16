@@ -79,6 +79,17 @@ export async function updateBaby(babyId, fields) {
   await updateDoc(ref, fields);
 }
 
+export async function updateHandoffNote(babyId, text, authorName) {
+  const ref = doc(db, "babies", babyId);
+  await updateDoc(ref, {
+    handoffNote: {
+      text,
+      authorName,
+      updatedAt: new Date().toISOString(),
+    },
+  });
+}
+
 export async function updateBabySettings(babyId, settings) {
   const ref = doc(db, "babies", babyId);
   const settingsFields = {};

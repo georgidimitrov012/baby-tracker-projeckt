@@ -15,6 +15,7 @@ import { useAnalytics, fmtMinutes, fmtTime } from "../../hooks/useAnalytics";
 import MiniBarChart         from "../../components/charts/MiniBarChart";
 import { ROLES }            from "../../utils/permissions";
 import { exportEventsToCsvFile } from "../../utils/csvExport";
+import { useTheme }         from "../../context/ThemeContext";
 
 // ── Stat card ────────────────────────────────────────────────
 function StatCard({ icon, label, value, sub, color = "#e3f2fd", textColor = "#1565c0" }) {
@@ -33,9 +34,39 @@ function SectionHeader({ title }) {
   return <Text style={styles.sectionHeader}>{title}</Text>;
 }
 
+// ── Insight card (themed) ──────────────────────────────────────
+function InsightCard({ icon, title, value, subtitle, bgColor, valueColor }) {
+  const { theme } = useTheme();
+  return (
+    <View style={[insightCardStyles.card, { backgroundColor: bgColor ?? theme.card }]}>
+      <Text style={insightCardStyles.icon}>{icon}</Text>
+      <Text style={[insightCardStyles.title, { color: theme.textMuted }]}>{title}</Text>
+      <Text style={[insightCardStyles.value, { color: valueColor ?? theme.text }]}>{value}</Text>
+      {subtitle ? (
+        <Text style={[insightCardStyles.subtitle, { color: theme.textSecondary }]}>{subtitle}</Text>
+      ) : null}
+    </View>
+  );
+}
+
+const insightCardStyles = StyleSheet.create({
+  card: {
+    flex: 1,
+    borderRadius: 14,
+    padding: 14,
+    gap: 3,
+    minWidth: "30%",
+  },
+  icon:     { fontSize: 20, marginBottom: 2 },
+  title:    { fontSize: 11, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5 },
+  value:    { fontSize: 18, fontWeight: "800" },
+  subtitle: { fontSize: 11, marginTop: 1 },
+});
+
 export default function AnalyticsScreen() {
   const { activeBaby, activeBabyId } = useBaby();
   const { myRole }                   = usePermissions();
+  const { theme }                    = useTheme();
 
   const [range, setRange]            = useState(7); // 7 or 30
   const [exporting, setExporting]    = useState(false);
@@ -309,6 +340,69 @@ export default function AnalyticsScreen() {
               </Text>
             </View>
           ) : null}
+        </>
+      ) : null}
+
+      {/* ── Patterns ──────────────────────────────────────── */}
+      {!isPediatrician && (
+        insights.avgFeedingGapMin != null ||
+        insights.sleepTrendPercent != null ||
+        insights.avgSleepOnsetAfterFeedingMin != null
+      ) ? (
+        <>
+          <SectionHeader title="Patterns" />
+          <View style={styles.cardRow}>
+            {insights.avgFeedingGapMin != null ? (
+              <InsightCard
+                icon="🍼"
+                title="Feeding Rhythm"
+                value={(() => {
+                  const h = Math.floor(insights.avgFeedingGapMin / 60);
+                  const m = insights.avgFeedingGapMin % 60;
+                  return h > 0 ? (m > 0 ? `Every ~${h}h ${m}m` : `Every ~${h}h`) : `Every ~${m}m`;
+                })()}
+                subtitle="average gap between feeds this week"
+                bgColor={theme.primaryLight}
+                valueColor={theme.primary}
+              />
+            ) : null}
+            {insights.sleepTrendPercent != null ? (
+              <InsightCard
+                icon={
+                  insights.sleepTrendDirection === "up" ? "📈"
+                  : insights.sleepTrendDirection === "down" ? "📉"
+                  : "📊"
+                }
+                title="Sleep Trend"
+                value={
+                  insights.sleepTrendDirection === "stable"
+                    ? "Stable"
+                    : `${insights.sleepTrendPercent > 0 ? "+" : ""}${insights.sleepTrendPercent}%`
+                }
+                subtitle="vs previous week"
+                bgColor={
+                  insights.sleepTrendDirection === "up" ? theme.successLight
+                  : insights.sleepTrendDirection === "down" ? theme.warningLight
+                  : theme.card
+                }
+                valueColor={
+                  insights.sleepTrendDirection === "up" ? theme.success
+                  : insights.sleepTrendDirection === "down" ? theme.warning
+                  : theme.text
+                }
+              />
+            ) : null}
+            {insights.avgSleepOnsetAfterFeedingMin != null ? (
+              <InsightCard
+                icon="😴"
+                title="Falls Asleep"
+                value={`~${insights.avgSleepOnsetAfterFeedingMin}m after feeding`}
+                subtitle="average time from feed to sleep"
+                bgColor={theme.accentLight}
+                valueColor={theme.accent}
+              />
+            ) : null}
+          </View>
         </>
       ) : null}
 

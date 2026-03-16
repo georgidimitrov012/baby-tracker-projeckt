@@ -18,6 +18,7 @@ import AnalyticsScreen     from "../screens/app/AnalyticsScreen";
 import SettingsScreen      from "../screens/app/SettingsScreen";
 import GrowthScreen        from "../screens/app/GrowthScreen";
 import MilestonesScreen    from "../screens/app/MilestonesScreen";
+import VaccineScreen       from "../screens/app/VaccineScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -123,6 +124,7 @@ export default function AppNavigator() {
         component={MilestonesScreen}
         options={{ title: "Milestones" }}
       />
+      <Stack.Screen name="Vaccines" component={VaccineScreen} options={{ title: "Vaccines 💉" }} />
     </Stack.Navigator>
   );
 }

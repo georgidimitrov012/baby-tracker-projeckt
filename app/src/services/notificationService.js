@@ -116,3 +116,52 @@ export async function scheduleFeedingReminder(intervalHours = 3, babyName = "you
 export async function rescheduleAfterFeeding(intervalHours = 3, babyName = "your baby") {
   await scheduleFeedingReminder(intervalHours, babyName);
 }
+
+// ─── Daily Digest ─────────────────────────────────────────────────────────────
+
+const DAILY_DIGEST_KEY = "daily_digest_notification_id";
+
+/**
+ * Schedule a daily 8am digest notification.
+ * Safe to call multiple times — cancels the previous one first.
+ */
+export async function scheduleDailyDigest(babyName = "your baby") {
+  if (Platform.OS === "web") return;
+  try {
+    const { status } = await Notifications.getPermissionsAsync();
+    if (status !== "granted") return;
+
+    const existingId = await AsyncStorage.getItem(DAILY_DIGEST_KEY);
+    if (existingId) {
+      await Notifications.cancelScheduledNotificationAsync(existingId).catch(() => {});
+    }
+
+    const id = await Notifications.scheduleNotificationAsync({
+      content: {
+        title: "Good morning! 🌅",
+        body: `See how ${babyName} did overnight. Open to check last night's summary.`,
+        sound: "default",
+      },
+      trigger: { hour: 8, minute: 0, repeats: true },
+    });
+    await AsyncStorage.setItem(DAILY_DIGEST_KEY, id);
+  } catch (e) {
+    console.warn("[notifications] daily digest error:", e);
+  }
+}
+
+/**
+ * Cancel the daily digest notification.
+ */
+export async function cancelDailyDigest() {
+  if (Platform.OS === "web") return;
+  try {
+    const id = await AsyncStorage.getItem(DAILY_DIGEST_KEY);
+    if (id) {
+      await Notifications.cancelScheduledNotificationAsync(id).catch(() => {});
+      await AsyncStorage.removeItem(DAILY_DIGEST_KEY);
+    }
+  } catch (e) {
+    console.warn("[notifications] cancel daily digest error:", e);
+  }
+}

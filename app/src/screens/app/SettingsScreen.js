@@ -17,7 +17,7 @@ import { cancelFeedingReminder, scheduleFeedingReminder } from "../../services/n
 import { showAlert }                from "../../utils/platform";
 
 export default function SettingsScreen({ navigation }) {
-  const { theme, isDark, toggleTheme } = useTheme();
+  const { theme, isDark, isNight, nightModeEnabled, toggleTheme, toggleNightMode } = useTheme();
   const { activeBaby, activeBabyId }   = useBaby();
   const { canEditBaby }                = usePermissions();
 
@@ -79,6 +79,18 @@ export default function SettingsScreen({ navigation }) {
           <Switch
             value={isDark}
             onValueChange={toggleTheme}
+            trackColor={{ false: "#ddd", true: theme.primary }}
+            thumbColor="#fff"
+          />
+        </View>
+        <View style={s.row}>
+          <View>
+            <Text style={s.settingLabel}>Auto Night Mode</Text>
+            <Text style={s.settingHint}>Ultra-dim red theme 10pm–6am — perfect for 3am feeds</Text>
+          </View>
+          <Switch
+            value={nightModeEnabled}
+            onValueChange={toggleNightMode}
             trackColor={{ false: "#ddd", true: theme.primary }}
             thumbColor="#fff"
           />

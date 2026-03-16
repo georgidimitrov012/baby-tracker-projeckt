@@ -30,6 +30,120 @@ function dateKey(date) {
   return `${yyyy}-${mm}-${dd}`;
 }
 
+// WHO weight-for-age (kg) — Girls, simplified reference points
+// [ageMonths, p3, p15, p50, p85, p97]
+const WHO_WEIGHT_GIRLS = [
+  [0,  2.4, 2.8, 3.3, 3.9, 4.2],
+  [1,  3.2, 3.6, 4.2, 4.8, 5.1],
+  [2,  3.9, 4.5, 5.1, 5.8, 6.2],
+  [3,  4.5, 5.2, 5.8, 6.6, 7.0],
+  [4,  5.0, 5.7, 6.4, 7.3, 7.8],
+  [6,  5.7, 6.5, 7.3, 8.2, 8.7],
+  [9,  6.5, 7.3, 8.2, 9.3, 9.9],
+  [12, 7.0, 7.9, 8.9, 10.1, 10.8],
+  [18, 7.8, 8.8, 9.9, 11.3, 12.1],
+  [24, 8.5, 9.6, 10.8, 12.4, 13.2],
+];
+
+function getPercentileForAge(ageMonths) {
+  const clampedAge = Math.max(0, Math.min(ageMonths, 24));
+  // Find surrounding rows for interpolation
+  let lo = WHO_WEIGHT_GIRLS[0];
+  let hi = WHO_WEIGHT_GIRLS[WHO_WEIGHT_GIRLS.length - 1];
+  for (let i = 0; i < WHO_WEIGHT_GIRLS.length - 1; i++) {
+    if (WHO_WEIGHT_GIRLS[i][0] <= clampedAge && WHO_WEIGHT_GIRLS[i + 1][0] >= clampedAge) {
+      lo = WHO_WEIGHT_GIRLS[i];
+      hi = WHO_WEIGHT_GIRLS[i + 1];
+      break;
+    }
+  }
+  const span = hi[0] - lo[0];
+  const t = span === 0 ? 0 : (clampedAge - lo[0]) / span;
+  const interp = (col) => lo[col] + t * (hi[col] - lo[col]);
+  return {
+    p3:  parseFloat(interp(1).toFixed(1)),
+    p15: parseFloat(interp(2).toFixed(1)),
+    p50: parseFloat(interp(3).toFixed(1)),
+    p85: parseFloat(interp(4).toFixed(1)),
+    p97: parseFloat(interp(5).toFixed(1)),
+  };
+}
+
+function PercentileBadge({ currentWeight, ageMonths }) {
+  const { theme } = useTheme();
+  if (ageMonths == null || currentWeight == null) return null;
+
+  const { p3, p15, p50, p85, p97 } = getPercentileForAge(ageMonths);
+
+  let band, isWarning;
+  if (currentWeight < p3) {
+    band = "Below 3rd percentile — mention to your doctor";
+    isWarning = true;
+  } else if (currentWeight < p15) {
+    band = "3rd–15th percentile";
+    isWarning = false;
+  } else if (currentWeight < p50) {
+    band = "15th–50th percentile";
+    isWarning = false;
+  } else if (currentWeight < p85) {
+    band = "50th–85th percentile";
+    isWarning = false;
+  } else if (currentWeight < p97) {
+    band = "85th–97th percentile";
+    isWarning = false;
+  } else {
+    band = "Above 97th percentile — mention to your doctor";
+    isWarning = true;
+  }
+
+  const bandBg  = isWarning ? theme.warningLight  ?? "#fff3cd" : theme.successLight ?? "#e8f5e9";
+  const bandFg  = isWarning ? theme.warningText   ?? "#7c5800" : theme.successText  ?? "#1b5e20";
+  const borderC = isWarning ? theme.warning       ?? "#f59e0b" : theme.success      ?? "#43a047";
+
+  return (
+    <View style={[pStyles.wrapper, { borderColor: borderC }]}>
+      <Text style={[pStyles.label, { color: theme.textMuted }]}>WHO Percentile Reference</Text>
+      <View style={[pStyles.bandChip, { backgroundColor: bandBg }]}>
+        <Text style={[pStyles.bandText, { color: bandFg }]}>{band}</Text>
+      </View>
+      <Text style={[pStyles.refText, { color: theme.textMuted }]}>
+        Reference at {Math.round(ageMonths)}mo: p3 = {p3} kg  ·  p50 = {p50} kg  ·  p97 = {p97} kg
+      </Text>
+    </View>
+  );
+}
+
+const pStyles = StyleSheet.create({
+  wrapper: {
+    marginTop: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    padding: 10,
+    gap: 6,
+  },
+  label: {
+    fontSize: 10,
+    fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 0.7,
+    marginBottom: 2,
+  },
+  bandChip: {
+    borderRadius: 6,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    alignSelf: "flex-start",
+  },
+  bandText: {
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  refText: {
+    fontSize: 11,
+    marginTop: 2,
+  },
+});
+
 // Minimal line-chart using Views
 function GrowthChart({ logs }) {
   if (logs.length < 2) {
@@ -171,6 +285,11 @@ export default function GrowthScreen() {
 
   const s = makeStyles(theme);
 
+  const ageMonths = activeBaby?.birthDate
+    ? Math.max(0, (Date.now() - new Date(activeBaby.birthDate).getTime()) / (1000 * 60 * 60 * 24 * 30.44))
+    : null;
+  const latestWeight = logs.length > 0 ? logs[logs.length - 1].weight : null;
+
   if (!activeBaby) {
     return (
       <View style={s.centered}>
@@ -195,6 +314,9 @@ export default function GrowthScreen() {
       <View style={s.card}>
         <Text style={s.sectionHeader}>Weight Over Time (kg)</Text>
         <GrowthChart logs={logs} />
+        {ageMonths != null && logs.length > 0 ? (
+          <PercentileBadge currentWeight={latestWeight} ageMonths={ageMonths} />
+        ) : null}
       </View>
 
       {/* Add form */}

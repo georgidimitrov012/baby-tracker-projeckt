@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -6,6 +6,10 @@ import {
   StyleSheet,
   ScrollView,
   ActivityIndicator,
+  Modal,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { useAuth }                from "../../context/AuthContext";
 import { useBaby }                from "../../context/BabyContext";
@@ -14,13 +18,16 @@ import { usePermissions }         from "../../hooks/usePermissions";
 import { useSleepTimer }          from "../../hooks/useSleepTimer";
 import { useEvents }              from "../../hooks/useEvents";
 import { useReminders }           from "../../hooks/useReminders";
+import { useNapPredictor }        from "../../hooks/useNapPredictor";
 import { useTheme }               from "../../context/ThemeContext";
 import RoleBadge                  from "../../components/RoleBadge";
 import SleepTimerCard             from "../../components/SleepTimerCard";
 import OfflineBanner              from "../../components/OfflineBanner";
 import { showConfirm, showAlert } from "../../utils/platform";
 import { addEvent }               from "../../services/eventStore";
-import { notifyCoParents }        from "../../services/notificationService";
+import { notifyCoParents, scheduleDailyDigest } from "../../services/notificationService";
+import { updateDoc, doc }         from "firebase/firestore";
+import { db }                     from "../../services/firebase";
 
 function getGreeting() {
   const h = new Date().getHours();
@@ -41,6 +48,244 @@ function timeAgo(date) {
   return `${Math.floor(diffHours / 24)}d ago`;
 }
 
+function getBabyAge(birthDate) {
+  if (!birthDate) return null;
+  const bd = birthDate?.toDate ? birthDate.toDate() : new Date(birthDate);
+  if (isNaN(bd.getTime())) return null;
+  const totalDays = Math.floor((Date.now() - bd.getTime()) / 86400000);
+  if (totalDays < 0) return null;
+  const weeks = Math.floor(totalDays / 7);
+  const days  = totalDays % 7;
+  if (weeks < 16) {
+    return days === 0 ? `${weeks}w old` : `${weeks}w ${days}d old`;
+  }
+  const months   = Math.floor(totalDays / 30.44);
+  const remWeeks = Math.floor((totalDays - Math.round(months * 30.44)) / 7);
+  return remWeeks > 0 ? `${months}mo ${remWeeks}w old` : `${months}mo old`;
+}
+
+// ── Handoff Note Card ──────────────────────────────────────────────────────────
+function HandoffNoteCard({ activeBaby, activeBabyId, canWrite, user }) {
+  const { theme } = useTheme();
+  const s = makeHandoffStyles(theme);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [draftText, setDraftText]       = useState("");
+  const [saving, setSaving]             = useState(false);
+
+  const note = activeBaby?.handoffNote;
+
+  const openEdit = () => {
+    setDraftText(note?.text ?? "");
+    setModalVisible(true);
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await updateDoc(doc(db, "babies", activeBabyId), {
+        handoffNote: {
+          text:       draftText.trim(),
+          authorName: user?.displayName ?? "Unknown",
+          updatedAt:  new Date().toISOString(),
+        },
+      });
+      setModalVisible(false);
+    } catch (e) {
+      showAlert("Error", "Could not save note. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (!note?.text && !canWrite) return null;
+
+  return (
+    <>
+      <View style={s.card}>
+        <View style={s.cardHeader}>
+          <Text style={s.cardTitle}>📝 Handoff Note</Text>
+          {canWrite ? (
+            <TouchableOpacity
+              onPress={openEdit}
+              style={s.editBtn}
+              accessibilityRole="button"
+              accessibilityLabel="Edit handoff note"
+            >
+              <Text style={s.editBtnText}>Edit</Text>
+            </TouchableOpacity>
+          ) : null}
+        </View>
+        {note?.text ? (
+          <>
+            <Text style={s.noteText}>{note.text}</Text>
+            {note.authorName ? (
+              <Text style={s.noteMeta}>
+                — {note.authorName}
+                {note.updatedAt ? ` · ${timeAgo(new Date(note.updatedAt))}` : ""}
+              </Text>
+            ) : null}
+          </>
+        ) : (
+          <TouchableOpacity onPress={openEdit}>
+            <Text style={s.emptyText}>Tap Edit to leave a note for your co-parent…</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
+      <Modal visible={modalVisible} transparent animationType="slide">
+        <KeyboardAvoidingView
+          style={s.modalOverlay}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+        >
+          <View style={s.modalCard}>
+            <Text style={s.modalTitle}>Handoff Note</Text>
+            <Text style={s.modalHint}>Let your co-parent know what happened</Text>
+            <TextInput
+              style={s.modalInput}
+              value={draftText}
+              onChangeText={setDraftText}
+              placeholder="e.g. Fed at 2pm, gas drops given, a bit fussy…"
+              placeholderTextColor={theme.placeholder}
+              multiline
+              autoFocus
+            />
+            <View style={s.modalBtns}>
+              <TouchableOpacity style={s.cancelBtn} onPress={() => setModalVisible(false)}>
+                <Text style={s.cancelBtnText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[s.saveBtn, saving && { opacity: 0.6 }]}
+                onPress={handleSave}
+                disabled={saving}
+              >
+                <Text style={s.saveBtnText}>{saving ? "Saving…" : "Save"}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+    </>
+  );
+}
+
+const makeHandoffStyles = (theme) => StyleSheet.create({
+  card: {
+    backgroundColor: theme.primaryLight,
+    borderRadius: 18,
+    padding: 16,
+    marginBottom: 14,
+    borderLeftWidth: 3,
+    borderLeftColor: theme.primary,
+  },
+  cardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  cardTitle: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: theme.primary,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  editBtn: {
+    backgroundColor: theme.primary,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+  },
+  editBtnText: { color: "#fff", fontSize: 12, fontWeight: "700" },
+  noteText: { fontSize: 15, color: theme.text, lineHeight: 22 },
+  noteMeta: { fontSize: 11, color: theme.textMuted, marginTop: 6 },
+  emptyText: { fontSize: 13, color: theme.textMuted, fontStyle: "italic" },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "flex-end",
+  },
+  modalCard: {
+    backgroundColor: theme.card,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    gap: 12,
+  },
+  modalTitle: { fontSize: 18, fontWeight: "800", color: theme.text },
+  modalHint: { fontSize: 13, color: theme.textMuted },
+  modalInput: {
+    backgroundColor: theme.inputBg,
+    borderRadius: 14,
+    padding: 14,
+    fontSize: 15,
+    color: theme.inputText,
+    minHeight: 100,
+    borderWidth: 1,
+    borderColor: theme.border,
+    textAlignVertical: "top",
+  },
+  modalBtns: { flexDirection: "row", gap: 12 },
+  cancelBtn: {
+    flex: 1,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: "center",
+    backgroundColor: theme.border,
+  },
+  cancelBtnText: { fontSize: 15, fontWeight: "700", color: theme.textSecondary },
+  saveBtn: {
+    flex: 1,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: "center",
+    backgroundColor: theme.primary,
+  },
+  saveBtnText: { fontSize: 15, fontWeight: "700", color: "#fff" },
+});
+
+// ── Nap Predictor Card ─────────────────────────────────────────────────────────
+function NapPredictorCard({ napInfo }) {
+  const { theme } = useTheme();
+  if (!napInfo?.recommendation) return null;
+  const bg     = napInfo.overdue ? theme.warningLight : theme.successLight;
+  const accent = napInfo.overdue ? theme.warning      : theme.success;
+  const ww     = napInfo.wakeWindowMinutes;
+  const wwLabel = ww
+    ? (ww >= 60 ? `~${Math.floor(ww / 60)}h${ww % 60 > 0 ? ` ${ww % 60}m` : ""}` : `~${ww}m`)
+    : null;
+  return (
+    <View style={[napCardStyle.card, { backgroundColor: bg, borderLeftColor: accent }]}>
+      <Text style={napCardStyle.icon}>🛏️</Text>
+      <View style={napCardStyle.textWrap}>
+        <Text style={[napCardStyle.title, { color: accent }]}>Nap Predictor</Text>
+        <Text style={[napCardStyle.value, { color: accent }]}>{napInfo.recommendation}</Text>
+        {wwLabel ? (
+          <Text style={[napCardStyle.sub, { color: accent + "99" }]}>Wake window: {wwLabel}</Text>
+        ) : null}
+      </View>
+    </View>
+  );
+}
+
+const napCardStyle = StyleSheet.create({
+  card: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 18,
+    padding: 14,
+    marginBottom: 14,
+    borderLeftWidth: 3,
+    gap: 12,
+  },
+  icon: { fontSize: 26 },
+  textWrap: { flex: 1 },
+  title: { fontSize: 11, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 2 },
+  value: { fontSize: 15, fontWeight: "700" },
+  sub: { fontSize: 11, marginTop: 2 },
+});
+
+// ── Activity types ─────────────────────────────────────────────────────────────
 const ACTIVITY_TYPES = [
   { type: "feeding", icon: "🍼", label: "Fed",   color: "#F4845F" },
   { type: "sleep",   icon: "😴", label: "Slept", color: "#7B5EA7" },
@@ -85,16 +330,17 @@ const NAV_CARDS = [
   { screen: "History",       icon: "📋", label: "History",    color: "#F0EAFF", iconColor: "#7B5EA7" },
   { screen: "Growth",        icon: "📏", label: "Growth",     color: "#FFF8EC", iconColor: "#E88C3A" },
   { screen: "Milestones",    icon: "🎯", label: "Milestones", color: "#FFF0EB", iconColor: "#F4845F" },
+  { screen: "Vaccines",      icon: "💉", label: "Vaccines",   color: "#EBF4FF", iconColor: "#4A8FD6" },
   { screen: "Invites",       icon: "📬", label: "Invites",    color: "#F0EAFF", iconColor: "#7B5EA7" },
   { screen: "ManageMembers", icon: "👥", label: "Members",    color: "#E8F6F0", iconColor: "#47A67E" },
 ];
 
-// Dark-mode-friendly card colors for NAV_CARDS
 const NAV_CARDS_DARK = [
   { screen: "Analytics",     icon: "📊", label: "Analytics",  color: "#1A2E26", iconColor: "#6BC99A" },
   { screen: "History",       icon: "📋", label: "History",    color: "#2A2250", iconColor: "#9B7ED0" },
   { screen: "Growth",        icon: "📏", label: "Growth",     color: "#2A1E10", iconColor: "#F5A660" },
   { screen: "Milestones",    icon: "🎯", label: "Milestones", color: "#2A1810", iconColor: "#F4845F" },
+  { screen: "Vaccines",      icon: "💉", label: "Vaccines",   color: "#102030", iconColor: "#6AABF0" },
   { screen: "Invites",       icon: "📬", label: "Invites",    color: "#2A2250", iconColor: "#9B7ED0" },
   { screen: "ManageMembers", icon: "👥", label: "Members",    color: "#1A2E26", iconColor: "#6BC99A" },
 ];
@@ -106,15 +352,23 @@ export default function Dashboard({ navigation }) {
   const { isActive }                                = useSleepTimer();
   const { events }                                  = useEvents(activeBabyId);
   const { theme, isDark }                           = useTheme();
+  const napInfo                                     = useNapPredictor(events, activeBaby?.birthDate);
   useReminders(events, activeBaby);
 
-  const s = makeStyles(theme);
+  const s        = makeStyles(theme);
   const navCards = isDark ? NAV_CARDS_DARK : NAV_CARDS;
 
   const [loggingOut, setLoggingOut]           = useState(false);
   const isLoggingOut                          = useRef(false);
   const [quickLogSuccess, setQuickLogSuccess] = useState({ poop: false, pee: false });
   const quickLogInFlight                      = useRef({ poop: false, pee: false });
+
+  // Schedule daily 8am digest once per baby
+  useEffect(() => {
+    if (activeBaby?.name) {
+      scheduleDailyDigest(activeBaby.name).catch(() => {});
+    }
+  }, [activeBaby?.name]);
 
   const handleLogout = async () => {
     const confirmed = await showConfirm("Sign Out", "Are you sure you want to sign out?");
@@ -148,6 +402,8 @@ export default function Dashboard({ navigation }) {
       showAlert("Error", "Could not log event. Please try again.");
     }
   };
+
+  const babyAge = getBabyAge(activeBaby?.birthDate);
 
   return (
     <ScrollView
@@ -200,6 +456,9 @@ export default function Dashboard({ navigation }) {
               <Text style={s.babyCardName}>
                 {activeBaby ? activeBaby.name : "No baby selected"}
               </Text>
+              {babyAge ? (
+                <Text style={s.babyCardAge}>{babyAge}</Text>
+              ) : null}
               <Text style={s.babyCardSub}>
                 {activeBaby ? "Tap to switch or manage babies" : "Tap to add a baby"}
               </Text>
@@ -210,6 +469,16 @@ export default function Dashboard({ navigation }) {
       </TouchableOpacity>
 
       <RoleBadge />
+
+      {/* Handoff note */}
+      {activeBaby ? (
+        <HandoffNoteCard
+          activeBaby={activeBaby}
+          activeBabyId={activeBabyId}
+          canWrite={canWriteEvents}
+          user={user}
+        />
+      ) : null}
 
       {/* Read-only banner */}
       {!canWriteEvents && activeBaby ? (
@@ -222,6 +491,9 @@ export default function Dashboard({ navigation }) {
 
       {/* Last activity */}
       {activeBaby ? <LastActivityCard events={events} /> : null}
+
+      {/* Nap predictor */}
+      {activeBaby ? <NapPredictorCard napInfo={napInfo} /> : null}
 
       {/* Sleep timer */}
       {activeBaby ? <SleepTimerCard compact={true} /> : null}
@@ -347,6 +619,7 @@ const makeStyles = (theme) => StyleSheet.create({
   babyCardIcon: { fontSize: 28, marginRight: 12 },
   babyCardText: { flex: 1 },
   babyCardName: { fontSize: 17, fontWeight: "700", color: theme.text },
+  babyCardAge:  { fontSize: 12, color: theme.primary, fontWeight: "600", marginTop: 1 },
   babyCardSub:  { fontSize: 12, color: theme.textMuted, marginTop: 2 },
   babyCardChevron: { fontSize: 22, color: theme.textMuted },
 
