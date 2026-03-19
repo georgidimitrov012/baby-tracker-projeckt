@@ -15,6 +15,7 @@ import { usePermissions }    from "../../hooks/usePermissions";
 import { useGrowth }         from "../../hooks/useGrowth";
 import { validateWeight }    from "../../utils/validation";
 import { showAlert, showConfirm } from "../../utils/platform";
+import DatePickerInput       from "../../components/DatePickerInput";
 
 function formatDate(date) {
   if (!date) return "";
@@ -336,12 +337,11 @@ export default function GrowthScreen() {
           {weightError ? <Text style={s.errorText}>{weightError}</Text> : null}
 
           <Text style={s.inputLabel}>Date</Text>
-          <TextInput
-            style={s.input}
-            value={dateStr}
-            onChangeText={setDateStr}
-            placeholder="YYYY-MM-DD"
-            placeholderTextColor={theme.placeholder}
+          <DatePickerInput
+            value={dateStr || null}
+            onChange={setDateStr}
+            placeholder="Tap to choose date"
+            maxDate={new Date()}
           />
 
           <Text style={s.inputLabel}>Notes (optional)</Text>

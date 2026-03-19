@@ -20,6 +20,7 @@ import { uploadBabyPhoto }  from "../../services/storageService";
 import { pickAndEncodePhoto } from "../../utils/imageUpload";
 import { showAlert, showConfirm } from "../../utils/platform";
 import FormInput            from "../../components/FormInput";
+import DatePickerInput      from "../../components/DatePickerInput";
 
 function formatDateToString(birthDate) {
   if (!birthDate) return "";
@@ -197,12 +198,13 @@ export default function BabyProfileScreen({ route, navigation }) {
           editable={canEditBaby}
         />
 
-        <FormInput
-          label="Birth Date"
-          value={birthDate}
-          onChangeText={setBirthDate}
-          placeholder="YYYY-MM-DD"
-          editable={canEditBaby}
+        <Text style={styles.fieldLabel}>Birth Date</Text>
+        <DatePickerInput
+          value={birthDate || null}
+          onChange={setBirthDate}
+          placeholder="Tap to choose birth date"
+          disabled={!canEditBaby}
+          maxDate={new Date()}
         />
 
         <FormInput
@@ -346,6 +348,13 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: "700",
+  },
+  fieldLabel: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#655E80",
+    marginBottom: 6,
+    marginTop: 12,
   },
   btnDisabled: { opacity: 0.45 },
   readOnlyNote: {

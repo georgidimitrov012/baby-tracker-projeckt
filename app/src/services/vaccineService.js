@@ -1,4 +1,4 @@
-import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, Timestamp, query, orderBy } from "firebase/firestore";
+import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, Timestamp } from "firebase/firestore";
 import { db } from "./firebase";
 
 // Standard UK vaccination schedule (age in months)
@@ -19,8 +19,20 @@ export const DEFAULT_VACCINE_SCHEDULE = [
 ];
 
 export async function getVaccines(babyId) {
-  const snap = await getDocs(query(collection(db, "babies", babyId, "vaccines"), orderBy("scheduledDate", "asc")));
-  return snap.docs.map(d => ({ id: d.id, ...d.data(), scheduledDate: d.data().scheduledDate?.toDate?.() ?? null, completedDate: d.data().completedDate?.toDate?.() ?? null }));
+  const snap = await getDocs(collection(db, "babies", babyId, "vaccines"));
+  const list = snap.docs.map(d => ({
+    id: d.id,
+    ...d.data(),
+    scheduledDate: d.data().scheduledDate?.toDate?.() ?? null,
+    completedDate: d.data().completedDate?.toDate?.() ?? null,
+  }));
+  // Sort client-side: nulls last, then ascending by date
+  return list.sort((a, b) => {
+    if (!a.scheduledDate && !b.scheduledDate) return 0;
+    if (!a.scheduledDate) return 1;
+    if (!b.scheduledDate) return -1;
+    return a.scheduledDate.getTime() - b.scheduledDate.getTime();
+  });
 }
 
 export async function addVaccine(babyId, { name, scheduledDate, notes = "", isCompleted = false, completedDate = null }) {
@@ -35,8 +47,16 @@ export async function addVaccine(babyId, { name, scheduledDate, notes = "", isCo
 export async function updateVaccine(babyId, vaccineId, data) {
   const ref = doc(db, "babies", babyId, "vaccines", vaccineId);
   const update = { ...data };
-  if (data.scheduledDate) update.scheduledDate = Timestamp.fromDate(new Date(data.scheduledDate));
-  if (data.completedDate) update.completedDate = Timestamp.fromDate(new Date(data.completedDate));
+  if ("scheduledDate" in data) {
+    update.scheduledDate = data.scheduledDate
+      ? Timestamp.fromDate(data.scheduledDate instanceof Date ? data.scheduledDate : new Date(data.scheduledDate))
+      : null;
+  }
+  if ("completedDate" in data) {
+    update.completedDate = data.completedDate
+      ? Timestamp.fromDate(data.completedDate instanceof Date ? data.completedDate : new Date(data.completedDate))
+      : null;
+  }
   return updateDoc(ref, update);
 }
 

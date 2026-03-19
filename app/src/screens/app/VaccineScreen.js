@@ -8,11 +8,13 @@ import {
   StyleSheet,
   Modal,
   TextInput,
-  Switch,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
-import { useTheme }       from "../../context/ThemeContext";
-import { useBaby }        from "../../context/BabyContext";
-import { usePermissions } from "../../hooks/usePermissions";
+import { useTheme }          from "../../context/ThemeContext";
+import { useBaby }           from "../../context/BabyContext";
+import { usePermissions }    from "../../hooks/usePermissions";
+import DatePickerInput       from "../../components/DatePickerInput";
 import {
   getVaccines,
   addVaccine,
@@ -306,6 +308,10 @@ export default function VaccineScreen() {
         transparent
         onRequestClose={() => setModalVisible(false)}
       >
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+        >
         <View style={s.modalOverlay}>
           <View style={s.modalCard}>
             <Text style={s.modalTitle}>Add Vaccine</Text>
@@ -320,14 +326,11 @@ export default function VaccineScreen() {
               maxLength={100}
             />
 
-            <Text style={s.inputLabel}>Scheduled Date (YYYY-MM-DD)</Text>
-            <TextInput
-              style={s.input}
-              value={formDate}
-              onChangeText={setFormDate}
-              placeholder="YYYY-MM-DD"
-              placeholderTextColor={theme.placeholder}
-              keyboardType="numbers-and-punctuation"
+            <Text style={s.inputLabel}>Scheduled Date</Text>
+            <DatePickerInput
+              value={formDate || null}
+              onChange={setFormDate}
+              placeholder="Tap to choose date"
             />
 
             <Text style={s.inputLabel}>Notes (optional)</Text>
@@ -362,6 +365,7 @@ export default function VaccineScreen() {
             </View>
           </View>
         </View>
+        </KeyboardAvoidingView>
       </Modal>
     </>
   );

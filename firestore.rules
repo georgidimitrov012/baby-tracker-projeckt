@@ -54,6 +54,12 @@ service cloud.firestore {
         allow read:             if isMember(babyId);
         allow create, update, delete: if canWrite(babyId);
       }
+
+      // Vaccines
+      match /vaccines/{vaccineId} {
+        allow read:                   if isMember(babyId);
+        allow create, update, delete: if canWrite(babyId);
+      }
     }
 
     // ── Users ────────────────────────────────────────────────────────────────
