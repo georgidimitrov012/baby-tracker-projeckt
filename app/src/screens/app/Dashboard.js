@@ -28,6 +28,7 @@ import { addEvent }               from "../../services/eventStore";
 import { notifyCoParents, scheduleDailyDigest } from "../../services/notificationService";
 import { updateDoc, doc }         from "firebase/firestore";
 import { db }                     from "../../services/firebase";
+import { getBabyAge }             from "../../utils/babyAge";
 
 function getGreeting() {
   const h = new Date().getHours();
@@ -46,22 +47,6 @@ function timeAgo(date) {
   const diffHours = Math.floor(diffMins / 60);
   if (diffHours < 24) return `${diffHours}h ${diffMins % 60}m ago`;
   return `${Math.floor(diffHours / 24)}d ago`;
-}
-
-function getBabyAge(birthDate) {
-  if (!birthDate) return null;
-  const bd = birthDate?.toDate ? birthDate.toDate() : new Date(birthDate);
-  if (isNaN(bd.getTime())) return null;
-  const totalDays = Math.floor((Date.now() - bd.getTime()) / 86400000);
-  if (totalDays < 0) return null;
-  const weeks = Math.floor(totalDays / 7);
-  const days  = totalDays % 7;
-  if (weeks < 16) {
-    return days === 0 ? `${weeks}w old` : `${weeks}w ${days}d old`;
-  }
-  const months   = Math.floor(totalDays / 30.44);
-  const remWeeks = Math.floor((totalDays - Math.round(months * 30.44)) / 7);
-  return remWeeks > 0 ? `${months}mo ${remWeeks}w old` : `${months}mo old`;
 }
 
 // ── Handoff Note Card ──────────────────────────────────────────────────────────

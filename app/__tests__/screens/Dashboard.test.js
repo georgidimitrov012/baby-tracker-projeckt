@@ -30,6 +30,9 @@ jest.mock('../../src/hooks/useReminders', () => ({
 jest.mock('../../src/hooks/useNapPredictor', () => ({
   useNapPredictor: jest.fn(() => ({ nextNapIn: null, wakeWindowMinutes: null, recommendation: null, overdue: false })),
 }));
+jest.mock('../../src/utils/babyAge', () => ({
+  getBabyAge: jest.fn(() => '10w 3d old'),
+}));
 
 // Service mocks
 const mockAddEvent = jest.fn(() => Promise.resolve('event-id'));

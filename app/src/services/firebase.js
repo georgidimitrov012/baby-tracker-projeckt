@@ -4,6 +4,7 @@ import {
   persistentLocalCache,
 } from "firebase/firestore";
 import { initializeAuth, getReactNativePersistence } from "firebase/auth";
+import { getStorage } from "firebase/storage";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // ⚠️ Move to environment variables before production.
@@ -24,3 +25,4 @@ export const db = initializeFirestore(app, {
 export const auth = initializeAuth(app, {
   persistence: getReactNativePersistence(AsyncStorage),
 });
+export const storage = getStorage(app);
