@@ -23,7 +23,6 @@ export default function FormInput({
           onChangeText={onChangeText}
           placeholder={placeholder}
           placeholderTextColor="#bbb"
-          keyboardType="numeric"
           returnKeyType="done"
           {...rest}
         />

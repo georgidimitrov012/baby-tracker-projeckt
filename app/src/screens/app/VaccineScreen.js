@@ -261,7 +261,7 @@ export default function VaccineScreen() {
           <View style={s.seedCard}>
             <Text style={s.seedTitle}>No vaccines yet</Text>
             <Text style={s.seedDesc}>
-              Seed the standard UK vaccination schedule based on {activeBaby.name}'s birth date.
+              Добавяне на стандартния Национален имунизационен календар на РБ на база рождената дата на {activeBaby.name}.
             </Text>
             <TouchableOpacity
               style={[s.seedBtn, seeding && s.seedBtnDisabled]}

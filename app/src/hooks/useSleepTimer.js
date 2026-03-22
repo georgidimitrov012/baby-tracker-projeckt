@@ -48,7 +48,7 @@ export function useSleepTimer() {
     }
 
     const tick = () => {
-      setElapsedSeconds(Math.floor((Date.now() - startedAt.getTime()) / 1000));
+      setElapsedSeconds(Math.max(0, Math.floor((Date.now() - startedAt.getTime()) / 1000)));
     };
     tick(); // immediate first tick
     intervalRef.current = setInterval(tick, 1000);

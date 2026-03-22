@@ -72,7 +72,7 @@ export default function SettingsScreen({ navigation }) {
       <Text style={s.sectionHeader}>Appearance</Text>
       <View style={s.card}>
         <View style={s.row}>
-          <View>
+          <View style={{ flex: 1 }}>
             <Text style={s.settingLabel}>Dark Mode</Text>
             <Text style={s.settingHint}>Easier on the eyes at night</Text>
           </View>
@@ -84,7 +84,7 @@ export default function SettingsScreen({ navigation }) {
           />
         </View>
         <View style={s.row}>
-          <View>
+          <View style={{ flex: 1 }}>
             <Text style={s.settingLabel}>Auto Night Mode</Text>
             <Text style={s.settingHint}>Ultra-dim red theme 10pm–6am — perfect for 3am feeds</Text>
           </View>

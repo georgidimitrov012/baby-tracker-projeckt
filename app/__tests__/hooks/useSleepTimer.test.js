@@ -108,6 +108,25 @@ describe('useSleepTimer — handleStart', () => {
   });
 });
 
+describe('useSleepTimer — elapsed seconds clamping', () => {
+  it('elapsedSeconds is 0 when activeSleepStart is slightly in the future (server clock skew)', () => {
+    // Simulate Firestore server timestamp slightly ahead of device clock
+    const futureTs = { toDate: () => new Date(Date.now() + 3000) };
+    setupMocks({ sleepStart: futureTs });
+    const { result } = renderHook(() => useSleepTimer());
+    // isActive should be true (startedAt is defined), but elapsedSeconds clamped to 0
+    expect(result.current.isActive).toBe(true);
+    expect(result.current.elapsedSeconds).toBeGreaterThanOrEqual(0);
+  });
+
+  it('elapsedSeconds is non-negative when sleep started 30s ago', () => {
+    const pastTs = { toDate: () => new Date(Date.now() - 30000) };
+    setupMocks({ sleepStart: pastTs });
+    const { result } = renderHook(() => useSleepTimer());
+    expect(result.current.elapsedSeconds).toBeGreaterThanOrEqual(0);
+  });
+});
+
 describe('useSleepTimer — handleStop', () => {
   it('calls stopSleep with the correct sleepType from baby doc', async () => {
     const startTime = new Date(Date.now() - 60000);

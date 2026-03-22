@@ -8,6 +8,7 @@ import {
   query,
   orderBy,
   serverTimestamp,
+  Timestamp,
 } from "firebase/firestore";
 import { db } from "./firebase";
 
@@ -18,7 +19,7 @@ function weightLogsRef(babyId) {
 export async function addWeightLog(babyId, userId, weight, date, notes = null) {
   const docRef = await addDoc(weightLogsRef(babyId), {
     weight,
-    date: date instanceof Date ? date : new Date(date),
+    date: Timestamp.fromDate(date instanceof Date ? date : new Date(date)),
     notes: notes?.trim() || null,
     loggedBy: userId,
     createdAt: serverTimestamp(),

@@ -14,6 +14,7 @@ import {
 import { db }        from "../services/firebase";
 import { useAuth }   from "./AuthContext";
 import { createBaby } from "../services/babyService";
+import { ROLES }     from "../utils/permissions";
 
 /**
  * BabyContext
@@ -39,6 +40,7 @@ export function BabyProvider({ children }) {
   const [babies, setBabies]           = useState([]);
   const [activeBabyId, setActiveBabyId] = useState(null);
   const [loadingBabies, setLoadingBabies] = useState(true);
+  const [babiesError, setBabiesError] = useState(null);
 
   // Keep a ref to the unsubscribe function so we can clean up
   const unsubRef = useRef(null);
@@ -54,22 +56,26 @@ export function BabyProvider({ children }) {
       setBabies([]);
       setActiveBabyId(null);
       setLoadingBabies(false);
+      setBabiesError(null);
       return;
     }
 
     setLoadingBabies(true);
 
     // Subscribe to all babies where this user is a member.
-    // This query fires again whenever ANY of the matched baby documents
-    // change — including activeSleepStart updates.
+    // We use `in` instead of `!= null` because Firestore's `!=` on nested map
+    // fields requires per-uid single-field indexes which may not exist, causing
+    // silent empty results. `in` with all known role values is fully indexed.
+    const memberQueryValues = [...Object.values(ROLES), true]; // true = legacy pre-RBAC boolean
     const q = query(
       collection(db, "babies"),
-      where(`members.${user.uid}`, "!=", null)
+      where(`members.${user.uid}`, "in", memberQueryValues)
     );
 
     unsubRef.current = onSnapshot(
       q,
       (snapshot) => {
+        setBabiesError(null);
         const loaded = snapshot.docs.map((d) => {
           const data = d.data();
 
@@ -102,6 +108,9 @@ export function BabyProvider({ children }) {
       },
       (error) => {
         console.error("[BabyContext] loadBabies error:", error);
+        setBabiesError(error.code === "permission-denied"
+          ? "Access denied — Firestore rules may need to be deployed."
+          : "Could not load babies. Check your connection.");
         setLoadingBabies(false);
       }
     );
@@ -135,6 +144,7 @@ export function BabyProvider({ children }) {
         activeBaby,
         setActiveBabyId,
         loadingBabies,
+        babiesError,
         refreshBabies,
         addBaby,
       }}

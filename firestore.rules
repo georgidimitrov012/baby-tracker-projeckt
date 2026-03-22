@@ -8,6 +8,8 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    // Used by subcollections — must get() the parent baby doc because
+    // resource.data refers to the subcollection document, not the baby.
     function getRole(babyId) {
       return get(/databases/$(database)/documents/babies/$(babyId)).data.members[request.auth.uid];
     }
@@ -22,19 +24,23 @@ service cloud.firestore {
       return role == 'owner' || role == 'admin' || role == 'parent';
     }
 
-    function isOwnerOrAdmin(babyId) {
-      let role = getRole(babyId);
-      return role == 'owner' || role == 'admin';
-    }
-
     // ── Babies ───────────────────────────────────────────────────────────────
+    // For the babies collection itself, use resource.data.members directly.
+    // Calling get(babies/babyId) from within a babies collection query creates
+    // a circular external-document read that Firestore silently drops for
+    // collection queries — causing the query to return no results.
 
     match /babies/{babyId} {
-      allow read:   if isMember(babyId);
+      allow read:   if isSignedIn() &&
+                       request.auth.uid in resource.data.members;
       allow create: if isSignedIn() &&
                        request.resource.data.members[request.auth.uid] == 'owner';
-      allow update: if isOwnerOrAdmin(babyId);
-      allow delete: if isSignedIn() && getRole(babyId) == 'owner';
+      allow update: if isSignedIn() && (
+                       resource.data.members[request.auth.uid] == 'owner' ||
+                       resource.data.members[request.auth.uid] == 'admin'
+                    );
+      allow delete: if isSignedIn() &&
+                       resource.data.members[request.auth.uid] == 'owner';
 
       // Events
       match /events/{eventId} {

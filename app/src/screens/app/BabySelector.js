@@ -49,7 +49,7 @@ function computeAge(birthDate) {
 export default function BabySelector({ navigation }) {
   const { theme } = useTheme();
   const s = makeStyles(theme);
-  const { babies, activeBabyId, setActiveBabyId, addBaby, loadingBabies } = useBaby();
+  const { babies, activeBabyId, setActiveBabyId, addBaby, loadingBabies, babiesError } = useBaby();
 
   const [newBabyName, setNewBabyName] = useState("");
   const [adding, setAdding]           = useState(false);
@@ -99,7 +99,9 @@ export default function BabySelector({ navigation }) {
       <ScrollView contentContainerStyle={s.container} keyboardShouldPersistTaps="handled">
         <Text style={s.sectionLabel}>Select Baby</Text>
 
-        {babies.length === 0 ? (
+        {babiesError ? (
+          <Text style={[s.empty, { color: "#c62828" }]}>{babiesError}</Text>
+        ) : babies.length === 0 ? (
           <Text style={s.empty}>No babies yet — add one below.</Text>
         ) : (
           babies.map((baby) => {

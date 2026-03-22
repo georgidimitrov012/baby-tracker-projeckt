@@ -254,7 +254,8 @@ export default function GrowthScreen() {
     if (!valid) { setWeightError(err); return; }
     setWeightError(null);
 
-    const date = new Date(dateStr);
+    const [y, m, d] = dateStr.split("-").map(Number);
+    const date = new Date(y, m - 1, d);
     if (isNaN(date.getTime())) {
       showAlert("Invalid date", "Please use YYYY-MM-DD format.");
       return;
@@ -286,8 +287,11 @@ export default function GrowthScreen() {
 
   const s = makeStyles(theme);
 
-  const ageMonths = activeBaby?.birthDate
-    ? Math.max(0, (Date.now() - new Date(activeBaby.birthDate).getTime()) / (1000 * 60 * 60 * 24 * 30.44))
+  const birthDateMs = activeBaby?.birthDate
+    ? (activeBaby.birthDate?.toDate?.() ?? new Date(activeBaby.birthDate)).getTime()
+    : null;
+  const ageMonths = (birthDateMs != null && !isNaN(birthDateMs))
+    ? Math.max(0, (Date.now() - birthDateMs) / (1000 * 60 * 60 * 24 * 30.44))
     : null;
   const latestWeight = logs.length > 0 ? logs[logs.length - 1].weight : null;
 

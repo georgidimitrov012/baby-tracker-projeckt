@@ -1,21 +1,39 @@
 import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, Timestamp } from "firebase/firestore";
 import { db } from "./firebase";
 
-// Standard UK vaccination schedule (age in months)
+// Bulgarian National Immunization Calendar (Национален имунизационен календар на РБ)
+// Source: Наредба № 15 за имунизациите в Република България
 export const DEFAULT_VACCINE_SCHEDULE = [
-  { name: "6-in-1 (DTaP/IPV/Hib/HepB)", ageMonths: 2, notes: "1st dose" },
-  { name: "Rotavirus", ageMonths: 2, notes: "1st dose (oral)" },
-  { name: "MenB", ageMonths: 2, notes: "1st dose" },
-  { name: "6-in-1 (DTaP/IPV/Hib/HepB)", ageMonths: 3, notes: "2nd dose" },
-  { name: "Rotavirus", ageMonths: 3, notes: "2nd dose (oral)" },
-  { name: "6-in-1 (DTaP/IPV/Hib/HepB)", ageMonths: 4, notes: "3rd dose" },
-  { name: "MenB", ageMonths: 4, notes: "2nd dose" },
-  { name: "Hib/MenC", ageMonths: 12, notes: "Booster" },
-  { name: "MMR (measles, mumps, rubella)", ageMonths: 12, notes: "1st dose" },
-  { name: "PCV (pneumococcal)", ageMonths: 12, notes: "Booster" },
-  { name: "MenB", ageMonths: 12, notes: "Booster" },
-  { name: "MMR (measles, mumps, rubella)", ageMonths: 40, notes: "2nd dose (pre-school)" },
-  { name: "4-in-1 pre-school booster (DTaP/IPV)", ageMonths: 40, notes: "Pre-school booster" },
+  // At birth
+  { name: "БЦЖ (BCG) — Туберкулоза", ageMonths: 0, notes: "При раждане — в рамките на 24 ч." },
+  { name: "Хепатит Б (HepB)", ageMonths: 0, notes: "1-ва доза — при раждане" },
+
+  // 1 month
+  { name: "Хепатит Б (HepB)", ageMonths: 1, notes: "2-ра доза" },
+
+  // 2 months
+  { name: "Хексавалентна ваксина (DTaP-IPV-Hib-HepB)", ageMonths: 2, notes: "1-ва доза" },
+  { name: "Пневмококова ваксина PCV13", ageMonths: 2, notes: "1-ва доза" },
+
+  // 3 months
+  { name: "Хексавалентна ваксина (DTaP-IPV-Hib-HepB)", ageMonths: 3, notes: "2-ра доза" },
+
+  // 4 months
+  { name: "Хексавалентна ваксина (DTaP-IPV-Hib-HepB)", ageMonths: 4, notes: "3-та доза" },
+  { name: "Пневмококова ваксина PCV13", ageMonths: 4, notes: "2-ра доза" },
+
+  // 11 months
+  { name: "Пневмококова ваксина PCV13", ageMonths: 11, notes: "Реваксинация (бустер)" },
+
+  // 12 months
+  { name: "MMR (Морбили, Паротит, Рубеола)", ageMonths: 12, notes: "1-ва доза" },
+
+  // 13 months
+  { name: "Хексавалентна ваксина (DTaP-IPV-Hib-HepB)", ageMonths: 13, notes: "Реваксинация (4-та доза)" },
+
+  // 6 years (72 months)
+  { name: "DTaP-IPV (Тетравалентна)", ageMonths: 72, notes: "1-ви бустер — предучилищна възраст" },
+  { name: "MMR (Морбили, Паротит, Рубеола)", ageMonths: 72, notes: "2-ра доза" },
 ];
 
 export async function getVaccines(babyId) {

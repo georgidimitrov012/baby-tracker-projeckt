@@ -69,9 +69,17 @@ describe("createBaby", () => {
 });
 
 describe("getBabiesForUser", () => {
-  it("queries with members.<userId> != null filter", async () => {
+  it("queries with members.<userId> in all valid roles (including legacy boolean)", async () => {
     await getBabiesForUser("user1");
-    expect(mockWhere).toHaveBeenCalledWith("members.user1", "!=", null);
+    const [field, op, values] = mockWhere.mock.calls[0];
+    expect(field).toBe("members.user1");
+    expect(op).toBe("in");
+    expect(values).toContain("owner");
+    expect(values).toContain("admin");
+    expect(values).toContain("parent");
+    expect(values).toContain("viewer");
+    expect(values).toContain("pediatrician");
+    expect(values).toContain(true); // legacy pre-RBAC boolean
   });
 
   it("returns empty array when no docs", async () => {

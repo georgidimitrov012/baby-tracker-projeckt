@@ -8,6 +8,7 @@ const mockDoc        = jest.fn((...args) => ({ _path: args.join("/") }));
 const mockQuery      = jest.fn((ref) => ref);
 const mockOrderBy    = jest.fn();
 const mockServerTimestamp = jest.fn(() => "SERVER_TS");
+const mockTimestampFromDate = jest.fn((d) => ({ _type: "Timestamp", _date: d }));
 
 jest.mock("firebase/firestore", () => ({
   addDoc:          mockAddDoc,
@@ -18,12 +19,16 @@ jest.mock("firebase/firestore", () => ({
   query:           mockQuery,
   orderBy:         mockOrderBy,
   serverTimestamp: mockServerTimestamp,
+  Timestamp:       { fromDate: mockTimestampFromDate },
 }));
 
 const { addWeightLog, subscribeToWeightLogs, deleteWeightLog } =
   require("../../src/services/growthService");
 
-beforeEach(() => jest.clearAllMocks());
+beforeEach(() => {
+  jest.clearAllMocks();
+  mockAddDoc.mockResolvedValue({ id: "log-id-1" });
+});
 
 describe("addWeightLog", () => {
   it("returns the new document ID", async () => {
@@ -38,17 +43,17 @@ describe("addWeightLog", () => {
     expect(fields.loggedBy).toBe("user1");
   });
 
-  it("converts string date to Date object", async () => {
+  it("converts string date via Timestamp.fromDate", async () => {
     await addWeightLog("baby1", "user1", 5.0, "2024-03-15");
-    const [, fields] = mockAddDoc.mock.calls[0];
-    expect(fields.date).toBeInstanceOf(Date);
+    expect(mockTimestampFromDate).toHaveBeenCalledTimes(1);
+    const passedDate = mockTimestampFromDate.mock.calls[0][0];
+    expect(passedDate).toBeInstanceOf(Date);
   });
 
-  it("passes Date object through unchanged", async () => {
+  it("wraps a Date object in Timestamp.fromDate", async () => {
     const d = new Date("2024-03-15");
     await addWeightLog("baby1", "user1", 5.0, d);
-    const [, fields] = mockAddDoc.mock.calls[0];
-    expect(fields.date).toBe(d);
+    expect(mockTimestampFromDate).toHaveBeenCalledWith(d);
   });
 
   it("stores notes when provided", async () => {

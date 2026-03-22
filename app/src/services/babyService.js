@@ -9,6 +9,7 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { db } from "./firebase";
+import { ROLES } from "../utils/permissions";
 
 /**
  * Create a new baby for a user.
@@ -44,11 +45,10 @@ export async function createBaby(userId, name, birthDate = null) {
  * @returns {Promise<Array>} array of baby objects with id
  */
 export async function getBabiesForUser(userId) {
-  // Firestore supports querying map key existence with:
-  // where(`members.${userId}`, "!=", null)
+  const memberQueryValues = [...Object.values(ROLES), true];
   const q = query(
     collection(db, "babies"),
-    where(`members.${userId}`, "!=", null)
+    where(`members.${userId}`, "in", memberQueryValues)
   );
   const snapshot = await getDocs(q);
   return snapshot.docs.map((d) => ({

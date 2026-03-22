@@ -89,13 +89,13 @@ describe("getBabyAge — months phase (≥ 16 weeks / ~4 months)", () => {
     expect(getBabyAge(monthsAgo(6))).toBe("6mo old");
   });
 
-  it("shows 12mo old for exactly 12 calendar months", () => {
-    expect(getBabyAge(monthsAgo(12))).toBe("12mo old");
+  it("shows 1y old for exactly 12 calendar months", () => {
+    expect(getBabyAge(monthsAgo(12))).toBe("1y old");
   });
 
-  it("shows 12mo 1w old for 12 months + 10 days", () => {
+  it("shows 1y old for 12 months + 10 days (sub-month weeks not shown in year display)", () => {
     const result = getBabyAge(monthsAgo(12, 10));
-    expect(result).toBe("12mo 1w old");
+    expect(result).toBe("1y old");
   });
 
   it("does not show negative remaining weeks near month boundary", () => {
@@ -111,7 +111,44 @@ describe("getBabyAge — months phase (≥ 16 weeks / ~4 months)", () => {
     expect(result).not.toMatch(/-\d/);
   });
 
-  it("shows 18mo old for 18 calendar months", () => {
-    expect(getBabyAge(monthsAgo(18))).toBe("18mo old");
+  it("shows 1y 6mo old for 18 calendar months", () => {
+    expect(getBabyAge(monthsAgo(18))).toBe("1y 6mo old");
+  });
+});
+
+describe("getBabyAge — years phase (≥ 12 months)", () => {
+  it("shows 1y old for exactly 12 months", () => {
+    expect(getBabyAge(monthsAgo(12))).toBe("1y old");
+  });
+
+  it("shows 1y 1mo old for 13 months", () => {
+    expect(getBabyAge(monthsAgo(13))).toBe("1y 1mo old");
+  });
+
+  it("shows 1y 6mo old for 18 months", () => {
+    expect(getBabyAge(monthsAgo(18))).toBe("1y 6mo old");
+  });
+
+  it("shows 2y old for exactly 24 months", () => {
+    expect(getBabyAge(monthsAgo(24))).toBe("2y old");
+  });
+
+  it("shows 2y 3mo old for 27 months", () => {
+    expect(getBabyAge(monthsAgo(27))).toBe("2y 3mo old");
+  });
+
+  it("shows 3y old for 36 months", () => {
+    expect(getBabyAge(monthsAgo(36))).toBe("3y old");
+  });
+
+  it("does not show remaining weeks in year display", () => {
+    // 14 months + 10 extra days → should be "1y 2mo old", not "1y 2mo 1w old"
+    const result = getBabyAge(monthsAgo(14, 10));
+    expect(result).toBe("1y 2mo old");
+  });
+
+  it("handles Firestore Timestamp for a 2-year-old", () => {
+    const firestoreTs = { toDate: () => monthsAgo(24) };
+    expect(getBabyAge(firestoreTs)).toBe("2y old");
   });
 });

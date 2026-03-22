@@ -45,4 +45,8 @@ describe('formatElapsed', () => {
   it('pads minutes and seconds with leading zeros', () => {
     expect(formatElapsed(65)).toBe('01:05');
   });
+
+  it('formats 0 seconds (clamped value from server clock skew) as 00:00', () => {
+    expect(formatElapsed(0)).toBe('00:00');
+  });
 });

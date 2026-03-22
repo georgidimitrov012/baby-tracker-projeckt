@@ -47,6 +47,13 @@ export function getBabyAge(birthDate) {
   const remainingDays  = Math.floor((now.getTime() - afterMonths.getTime()) / 86400000);
   const remainingWeeks = Math.floor(remainingDays / 7);
 
+  const years = Math.floor(months / 12);
+  const remainingMonths = months % 12;
+
+  if (years > 0) {
+    if (remainingMonths === 0) return `${years}y old`;
+    return `${years}y ${remainingMonths}mo old`;
+  }
   if (remainingWeeks > 0) return `${months}mo ${remainingWeeks}w old`;
   return `${months}mo old`;
 }
