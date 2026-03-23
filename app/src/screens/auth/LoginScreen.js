@@ -12,9 +12,11 @@ import {
 } from "react-native";
 import { loginUser } from "../../services/authService";
 import { useTheme } from "../../context/ThemeContext";
+import { useLanguage } from "../../context/LanguageContext";
 
 export default function LoginScreen({ navigation }) {
   const { theme } = useTheme();
+  const { t } = useLanguage();
   const s = makeStyles(theme);
 
   const [email, setEmail]       = useState("");
@@ -28,7 +30,7 @@ export default function LoginScreen({ navigation }) {
     setError(null);
 
     if (!email.trim() || !password) {
-      setError("Please enter your email and password.");
+      setError(t('enterEmailPassword'));
       return;
     }
 
@@ -40,7 +42,7 @@ export default function LoginScreen({ navigation }) {
       // No navigation needed — RootNavigator detects user change and
       // automatically swaps to AppNavigator.
     } catch (e) {
-      setError(friendlyError(e.code));
+      setError(t(friendlyError(e.code)));
     } finally {
       isSubmitting.current = false;
       setLoading(false);
@@ -59,8 +61,8 @@ export default function LoginScreen({ navigation }) {
       >
         <View style={s.hero}>
           <Text style={s.logo}>👶</Text>
-          <Text style={s.title}>Welcome back</Text>
-          <Text style={s.tagline}>Caring made simpler 💜</Text>
+          <Text style={s.title}>{t('welcomeBack')}</Text>
+          <Text style={s.tagline}>{t('caringTagline')}</Text>
         </View>
 
         {error ? (
@@ -70,7 +72,7 @@ export default function LoginScreen({ navigation }) {
         ) : null}
 
         <View style={s.form}>
-          <Text style={s.label}>Email</Text>
+          <Text style={s.label}>{t('email')}</Text>
           <TextInput
             style={s.input}
             value={email}
@@ -83,7 +85,7 @@ export default function LoginScreen({ navigation }) {
             returnKeyType="next"
           />
 
-          <Text style={s.label}>Password</Text>
+          <Text style={s.label}>{t('password')}</Text>
           <TextInput
             style={s.input}
             value={password}
@@ -106,7 +108,7 @@ export default function LoginScreen({ navigation }) {
         >
           {loading
             ? <ActivityIndicator color="#fff" />
-            : <Text style={s.btnText}>Sign In</Text>
+            : <Text style={s.btnText}>{t('signIn')}</Text>
           }
         </TouchableOpacity>
 
@@ -116,8 +118,8 @@ export default function LoginScreen({ navigation }) {
           accessibilityRole="button"
         >
           <Text style={s.linkText}>
-            Don't have an account?{" "}
-            <Text style={s.linkBold}>Create one</Text>
+            {t('noAccount')}{" "}
+            <Text style={s.linkBold}>{t('createOne')}</Text>
           </Text>
         </TouchableOpacity>
       </ScrollView>
@@ -126,21 +128,20 @@ export default function LoginScreen({ navigation }) {
 }
 
 /**
- * Convert Firebase error codes into readable messages.
- * Never expose raw Firebase error messages to users.
+ * Convert Firebase error codes into translation keys.
  */
 function friendlyError(code) {
   switch (code) {
     case "auth/user-not-found":
     case "auth/wrong-password":
     case "auth/invalid-credential":
-      return "Incorrect email or password.";
+      return 'wrongCredentials';
     case "auth/too-many-requests":
-      return "Too many attempts. Please try again later.";
+      return 'tooManyAttempts';
     case "auth/network-request-failed":
-      return "Network error. Check your connection.";
+      return 'networkError';
     default:
-      return "Sign in failed. Please try again.";
+      return 'signInFailed';
   }
 }
 

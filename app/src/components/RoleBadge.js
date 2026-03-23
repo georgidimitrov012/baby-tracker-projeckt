@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { usePermissions } from "../hooks/usePermissions";
+import { useLanguage }    from "../context/LanguageContext";
 
 const ROLE_STYLE = {
   owner:        { bg: "#e3f2fd", text: "#1565c0" },
@@ -18,6 +19,7 @@ const ROLE_STYLE = {
  */
 export default function RoleBadge() {
   const { myRole, myRoleLabel } = usePermissions();
+  const { t }                   = useLanguage();
 
   if (!myRole) {
     return null;
@@ -28,7 +30,7 @@ export default function RoleBadge() {
   return (
     <View style={[styles.badge, { backgroundColor: colors.bg }]}>
       <Text style={[styles.text, { color: colors.text }]}>
-        Your role: {myRoleLabel}
+        {t('yourRoleBadge', { role: myRoleLabel })}
       </Text>
     </View>
   );

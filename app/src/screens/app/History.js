@@ -13,6 +13,7 @@ import { useUserDisplayNames }    from "../../hooks/useUserDisplayNames";
 import { deleteEvent }            from "../../services/eventStore";
 import { showConfirm, showAlert } from "../../utils/platform";
 import { useTheme }               from "../../context/ThemeContext";
+import { useLanguage }            from "../../context/LanguageContext";
 import EventItem                  from "../../components/EventItem";
 
 const EDITABLE_TYPES = ["feeding", "sleep", "poop", "pee"];
@@ -22,6 +23,7 @@ export default function History({ navigation }) {
   const { canWriteEvents }         = usePermissions();
   const { events, loading, error } = useEvents(activeBabyId);
   const { theme }                  = useTheme();
+  const { t }                      = useLanguage();
   const s                          = makeStyles(theme);
 
   // Resolve loggedBy UIDs to display names
@@ -33,12 +35,12 @@ export default function History({ navigation }) {
 
   const handleDelete = async (item) => {
     if (!canWriteEvents) {
-      showAlert("Read only", "You don't have permission to delete events.");
+      showAlert(t('readOnly'), t('noPermissionDelete'));
       return;
     }
     const confirmed = await showConfirm(
-      "Delete Event",
-      `Delete this ${item.type} event?`
+      t('deleteEvent'),
+      t('deleteEventConfirm', { type: item.type })
     );
     if (!confirmed) return;
 
@@ -46,13 +48,13 @@ export default function History({ navigation }) {
       await deleteEvent(activeBabyId, item.id);
     } catch (e) {
       console.error("[History] delete error:", e);
-      showAlert("Error", "Could not delete event. Please try again.");
+      showAlert(t('error'), t('couldNotDelete'));
     }
   };
 
   const handleEdit = (item) => {
     if (!canWriteEvents) {
-      showAlert("Read only", "You don't have permission to edit events.");
+      showAlert(t('readOnly'), t('noPermissionEdit'));
       return;
     }
     navigation.navigate("EditEvent", {
@@ -81,7 +83,7 @@ export default function History({ navigation }) {
     return (
       <View style={s.centered}>
         <Text style={s.errorText}>
-          Failed to load events. Check your connection.
+          {t('failedToLoadEvents')}
         </Text>
       </View>
     );
@@ -91,7 +93,7 @@ export default function History({ navigation }) {
     <View style={[s.container, { backgroundColor: theme.background }]}>
       {!canWriteEvents ? (
         <View style={s.readOnlyBanner}>
-          <Text style={s.readOnlyText}>👁 Read-only view</Text>
+          <Text style={s.readOnlyText}>{t('readOnlyView')}</Text>
         </View>
       ) : null}
 
@@ -100,7 +102,7 @@ export default function History({ navigation }) {
         keyExtractor={(item) => item.id}
         contentContainerStyle={s.list}
         ListEmptyComponent={
-          <Text style={s.empty}>No events logged yet.</Text>
+          <Text style={s.empty}>{t('noEventsYet')}</Text>
         }
         renderItem={({ item }) => (
           <EventItem

@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import NetInfo from "@react-native-community/netinfo";
+import { useLanguage } from "../context/LanguageContext";
 
 export default function OfflineBanner() {
   const [isOnline, setIsOnline] = useState(true);
+  const { t }                   = useLanguage();
 
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener((state) => {
@@ -16,9 +18,7 @@ export default function OfflineBanner() {
 
   return (
     <View style={styles.banner}>
-      <Text style={styles.text}>
-        📵 You are offline — changes will sync when reconnected
-      </Text>
+      <Text style={styles.text}>{t('offline')}</Text>
     </View>
   );
 }

@@ -1,22 +1,25 @@
 import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
-import { useTheme } from "../context/ThemeContext";
+import { useTheme }    from "../context/ThemeContext";
+import { useLanguage } from "../context/LanguageContext";
 
-const EVENT_META = {
-  feeding: { icon: "🍼", label: "Feeding", bg: "#FFF0EB", dot: "#F4845F" },
-  sleep:   { icon: "😴", label: "Sleep",   bg: "#F0EAFF", dot: "#7B5EA7" },
-  poop:    { icon: "💩", label: "Poop",    bg: "#FFF8EC", dot: "#E88C3A" },
-  pee:     { icon: "💧", label: "Pee",     bg: "#E8F6F4", dot: "#47A67E" },
-};
+function getEventMeta(t) {
+  return {
+    feeding: { icon: "🍼", label: t('feeding'), bg: "#FFF0EB", dot: "#F4845F" },
+    sleep:   { icon: "😴", label: t('sleep'),   bg: "#F0EAFF", dot: "#7B5EA7" },
+    poop:    { icon: "💩", label: t('poopLabel'), bg: "#FFF8EC", dot: "#E88C3A" },
+    pee:     { icon: "💧", label: t('peeLabel'), bg: "#E8F6F4", dot: "#47A67E" },
+  };
+}
 
-function formatDetail(item) {
+function formatDetail(item, t) {
   if (item.type === "feeding") {
-    if (item.feedingType === "breast") return `Breast · ${item.duration ?? "?"} min`;
-    const typeLabel = item.feedingType === "formula" ? "Formula" : "Bottle";
+    if (item.feedingType === "breast") return `${t('breastLabel')} · ${item.duration ?? "?"} min`;
+    const typeLabel = item.feedingType === "formula" ? t('formulaLabel') : t('bottleLabel');
     return `${typeLabel} · ${item.amount ?? "?"} ml`;
   }
   if (item.type === "sleep") {
-    const typeLabel = item.sleepType === "night" ? "🌙 Night" : "💤 Nap";
+    const typeLabel = item.sleepType === "night" ? t('nightType') : t('napType');
     return `${typeLabel} · ${item.duration ?? "?"} min`;
   }
   return null;
@@ -32,10 +35,12 @@ function formatTime(time) {
 
 export default function EventItem({ item, onEdit, onDelete, loggedByName }) {
   const { theme } = useTheme();
+  const { t }     = useLanguage();
   const s = makeStyles(theme);
 
+  const EVENT_META = getEventMeta(t);
   const meta   = EVENT_META[item.type] ?? { icon: "❓", label: item.type, bg: "#F5F5F5", dot: "#999" };
-  const detail = formatDetail(item);
+  const detail = formatDetail(item, t);
 
   return (
     <View style={[s.container, { backgroundColor: meta.bg }]}>
@@ -50,7 +55,7 @@ export default function EventItem({ item, onEdit, onDelete, loggedByName }) {
         {detail ? <Text style={s.detail}>{detail}</Text> : null}
         <Text style={s.time}>{formatTime(item.time)}</Text>
         {item.notes ? <Text style={s.notes}>"{item.notes}"</Text> : null}
-        {loggedByName ? <Text style={s.loggedBy}>by {loggedByName}</Text> : null}
+        {loggedByName ? <Text style={s.loggedBy}>{t('by')} {loggedByName}</Text> : null}
       </View>
 
       {(onEdit || onDelete) ? (

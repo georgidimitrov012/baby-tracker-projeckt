@@ -1,4 +1,20 @@
 jest.mock('../../src/services/firebase', () => ({ db: {}, auth: {} }));
+jest.mock('../../src/context/LanguageContext', () => {
+  const en = jest.requireActual('../../src/i18n/en').default;
+  return {
+    useLanguage: jest.fn(() => ({
+      t: (k, vars = {}) => {
+        let str = en[k] ?? k;
+        Object.entries(vars).forEach(([key, val]) => {
+          str = str.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), String(val ?? ''));
+        });
+        return str;
+      },
+      language: 'en',
+      changeLanguage: jest.fn(),
+    })),
+  };
+});
 jest.mock('firebase/firestore', () => ({
   updateDoc: jest.fn(() => Promise.resolve()),
   doc: jest.fn(),

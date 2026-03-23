@@ -17,6 +17,7 @@ import { validateAmount, validateDuration, validateFeedingDuration } from "../..
 import { showAlert }                                         from "../../utils/platform";
 import FormInput                                             from "../../components/FormInput";
 import { useTheme }                                          from "../../context/ThemeContext";
+import { useLanguage }                                       from "../../context/LanguageContext";
 
 const SLEEP_TYPE_LABELS = { nap: "💤 Nap", night: "🌙 Night" };
 const FEEDING_TYPE_LABELS = { breast: "🤱 Breast", bottle: "🍼 Bottle", formula: "🥛 Formula" };
@@ -25,6 +26,7 @@ export default function EditEvent({ route, navigation }) {
   const { activeBabyId }   = useBaby();
   const { canWriteEvents } = usePermissions();
   const { theme }          = useTheme();
+  const { t }              = useLanguage();
   const s                  = makeStyles(theme);
 
   const {
@@ -42,8 +44,8 @@ export default function EditEvent({ route, navigation }) {
   const isBreastFeed   = isFeeding && initFeedingType === "breast";
   const hasNumericField = isFeeding || isSleep;
 
-  const label    = isBreastFeed ? "Duration" : isFeeding ? "Amount" : "Duration";
-  const unit     = isBreastFeed ? "min"      : isFeeding ? "ml"     : "min";
+  const label    = isBreastFeed ? t('duration') : isFeeding ? t('amount') : t('duration');
+  const unit     = isBreastFeed ? "min"         : isFeeding ? "ml"        : "min";
   const icon     = isFeeding ? "🍼" : isSleep ? "😴" : type === "poop" ? "💩" : "💧";
   const validate = isBreastFeed ? validateFeedingDuration : isFeeding ? validateAmount : validateDuration;
 
@@ -65,7 +67,7 @@ export default function EditEvent({ route, navigation }) {
     if (isSubmitting.current) return;
 
     if (!canWriteEvents) {
-      showAlert("Read only", "You don't have permission to edit events.");
+      showAlert(t('readOnly'), t('noPermissionEdit'));
       return;
     }
 
@@ -96,7 +98,7 @@ export default function EditEvent({ route, navigation }) {
       navigation.goBack();
     } catch (e) {
       console.error("[EditEvent] save error:", e);
-      showAlert("Error", "Could not save changes. Please try again.");
+      showAlert(t('error'), t('couldNotSaveChanges'));
     } finally {
       isSubmitting.current = false;
       setSaving(false);
@@ -113,7 +115,7 @@ export default function EditEvent({ route, navigation }) {
         keyboardShouldPersistTaps="handled"
       >
         <Text style={s.heading}>
-          Edit {icon}{" "}
+          {t('editHeading')} {icon}{" "}
           <Text style={s.typeLabel}>
             {type.charAt(0).toUpperCase() + type.slice(1)}
           </Text>
@@ -151,12 +153,12 @@ export default function EditEvent({ route, navigation }) {
           />
         ) : null}
 
-        <Text style={s.notesLabel}>Notes (optional)</Text>
+        <Text style={s.notesLabel}>{t('notesOptional')}</Text>
         <TextInput
           style={[s.notesInput, !canWriteEvents && s.notesInputDisabled]}
           value={notes}
           onChangeText={setNotes}
-          placeholder="Notes (optional)"
+          placeholder={t('notesOptional')}
           placeholderTextColor={theme.placeholder}
           multiline
           numberOfLines={3}
@@ -174,13 +176,13 @@ export default function EditEvent({ route, navigation }) {
         >
           {saving
             ? <ActivityIndicator color="#fff" />
-            : <Text style={s.btnText}>Save Changes</Text>
+            : <Text style={s.btnText}>{t('saveChanges')}</Text>
           }
         </TouchableOpacity>
 
         {!canWriteEvents ? (
           <Text style={s.readOnlyNote}>
-            You have read-only access and cannot edit events.
+            {t('readOnlyCannotEdit')}
           </Text>
         ) : null}
       </ScrollView>

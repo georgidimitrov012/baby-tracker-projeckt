@@ -19,19 +19,21 @@ import { validateAmount, validateFeedingDuration } from "../../utils/validation"
 import { showAlert }           from "../../utils/platform";
 import FormInput               from "../../components/FormInput";
 import { useTheme }            from "../../context/ThemeContext";
-
-const FEEDING_TYPES = [
-  { key: "bottle",  label: "🍼 Bottle"  },
-  { key: "formula", label: "🥛 Formula" },
-  { key: "breast",  label: "🤱 Breast"  },
-];
+import { useLanguage }         from "../../context/LanguageContext";
 
 export default function Feeding({ navigation }) {
   const { user }                      = useAuth();
   const { activeBabyId, activeBaby }  = useBaby();
   const { canWriteEvents }            = usePermissions();
   const { theme }                     = useTheme();
+  const { t }                         = useLanguage();
   const s                             = makeStyles(theme);
+
+  const FEEDING_TYPES = [
+    { key: "bottle",  label: t('bottleLabel')  },
+    { key: "formula", label: t('formulaLabel') },
+    { key: "breast",  label: t('breastLabel')  },
+  ];
 
   const [feedingType, setFeedingType] = useState("bottle");
   const [amount, setAmount]           = useState("");
@@ -48,12 +50,12 @@ export default function Feeding({ navigation }) {
     if (isSubmitting.current) return;
 
     if (!activeBabyId) {
-      showAlert("No baby selected", "Please add or select a baby from the Dashboard first.");
+      showAlert(t('noBabySelectedAlert'), t('noBabySelectedMsg'));
       return;
     }
 
     if (!canWriteEvents) {
-      showAlert("Read only", "You don't have permission to log events.");
+      showAlert(t('readOnly'), t('noPermissionLog'));
       return;
     }
 
@@ -95,7 +97,7 @@ export default function Feeding({ navigation }) {
       navigation.goBack();
     } catch (e) {
       console.error("[Feeding] save error:", e);
-      showAlert("Error", "Could not save. Please try again.");
+      showAlert(t('error'), t('couldNotSave'));
     } finally {
       isSubmitting.current = false;
       setSaving(false);
@@ -111,10 +113,10 @@ export default function Feeding({ navigation }) {
         contentContainerStyle={s.container}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={s.title}>Log Feeding 🍼</Text>
+        <Text style={s.title}>{t('logFeedingTitle')}</Text>
 
         {/* Feeding type picker */}
-        <Text style={s.typeLabel}>Type</Text>
+        <Text style={s.typeLabel}>{t('feedingType')}</Text>
         <View style={s.typeRow}>
           {FEEDING_TYPES.map(({ key, label }) => (
             <TouchableOpacity
@@ -137,13 +139,13 @@ export default function Feeding({ navigation }) {
 
         {isBreast ? (
           <FormInput
-            label="Duration"
+            label={t('duration')}
             value={duration}
             onChangeText={(v) => {
               setDuration(v);
               if (durationError) setDurationError(null);
             }}
-            placeholder="Duration in minutes"
+            placeholder={t('durationInMinutes')}
             unit="min"
             error={durationError}
             autoFocus
@@ -151,13 +153,13 @@ export default function Feeding({ navigation }) {
           />
         ) : (
           <FormInput
-            label="Amount"
+            label={t('amount')}
             value={amount}
             onChangeText={(v) => {
               setAmount(v);
               if (amountError) setAmountError(null);
             }}
-            placeholder="Amount in ml"
+            placeholder={t('amountInMl')}
             unit="ml"
             error={amountError}
             autoFocus
@@ -169,7 +171,7 @@ export default function Feeding({ navigation }) {
           style={s.notesInput}
           value={notes}
           onChangeText={setNotes}
-          placeholder="Notes (optional)"
+          placeholder={t('notesOptional')}
           placeholderTextColor={theme.placeholder}
           multiline
           numberOfLines={3}
@@ -186,13 +188,13 @@ export default function Feeding({ navigation }) {
         >
           {saving
             ? <ActivityIndicator color="#fff" />
-            : <Text style={s.btnText}>Save</Text>
+            : <Text style={s.btnText}>{t('save')}</Text>
           }
         </TouchableOpacity>
 
         {!canWriteEvents ? (
           <Text style={s.readOnlyNote}>
-            You have read-only access and cannot log events.
+            {t('readOnlyCannotLog')}
           </Text>
         ) : null}
       </ScrollView>

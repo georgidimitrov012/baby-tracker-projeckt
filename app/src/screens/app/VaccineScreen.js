@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { useTheme }          from "../../context/ThemeContext";
 import { useBaby }           from "../../context/BabyContext";
+import { useLanguage }       from "../../context/LanguageContext";
 import { usePermissions }    from "../../hooks/usePermissions";
 import DatePickerInput       from "../../components/DatePickerInput";
 import {
@@ -41,6 +42,7 @@ function isOverdue(vaccine) {
 export default function VaccineScreen() {
   const { theme }                        = useTheme();
   const { activeBaby, activeBabyId }     = useBaby();
+  const { t }                            = useLanguage();
   const { canEditBaby }                  = usePermissions();
 
   const [vaccines, setVaccines]          = useState([]);
@@ -65,7 +67,7 @@ export default function VaccineScreen() {
       setVaccines(data);
     } catch (e) {
       console.error("[VaccineScreen] load error:", e);
-      showAlert("Error", "Could not load vaccines.");
+      showAlert(t('error'), t('couldNotLoadVaccines'));
     } finally {
       setLoading(false);
     }
@@ -78,7 +80,7 @@ export default function VaccineScreen() {
   // ── Seed default schedule ────────────────────────────────────────────────────
   const handleSeed = async () => {
     if (!activeBabyId || !activeBaby?.birthDate) {
-      showAlert("Missing birth date", "Please set the baby's birth date in Baby Profile before seeding the schedule.");
+      showAlert(t('missingBirthDate'), t('missingBirthDateMsg'));
       return;
     }
     setSeeding(true);
@@ -87,7 +89,7 @@ export default function VaccineScreen() {
       await loadVaccines();
     } catch (e) {
       console.error("[VaccineScreen] seed error:", e);
-      showAlert("Error", "Could not seed default schedule.");
+      showAlert(t('error'), t('couldNotSeedSchedule'));
     } finally {
       setSeeding(false);
     }
@@ -103,34 +105,34 @@ export default function VaccineScreen() {
       await loadVaccines();
     } catch (e) {
       console.error("[VaccineScreen] mark done error:", e);
-      showAlert("Error", "Could not update vaccine.");
+      showAlert(t('error'), t('couldNotUpdateVaccine'));
     }
   };
 
   // ── Delete vaccine ───────────────────────────────────────────────────────────
   const handleDelete = async (vaccine) => {
-    const ok = await showConfirm("Delete Vaccine", `Delete "${vaccine.name}"?`);
+    const ok = await showConfirm(t('deleteVaccine'), t('deleteVaccineConfirm', { name: vaccine.name }));
     if (!ok) return;
     try {
       await deleteVaccine(activeBabyId, vaccine.id);
       setVaccines((prev) => prev.filter((v) => v.id !== vaccine.id));
     } catch (e) {
       console.error("[VaccineScreen] delete error:", e);
-      showAlert("Error", "Could not delete vaccine.");
+      showAlert(t('error'), t('couldNotDeleteVaccine'));
     }
   };
 
   // ── Add vaccine ──────────────────────────────────────────────────────────────
   const handleAddVaccine = async () => {
     if (!formName.trim()) {
-      showAlert("Name required", "Please enter a vaccine name.");
+      showAlert(t('vaccineNameRequired'), t('enterVaccineName'));
       return;
     }
     let scheduledDate = null;
     if (formDate.trim()) {
       const parsed = new Date(formDate.trim());
       if (isNaN(parsed.getTime())) {
-        showAlert("Invalid date", "Please use YYYY-MM-DD format.");
+        showAlert(t('invalidDate'), t('invalidDateMsg'));
         return;
       }
       scheduledDate = parsed;
@@ -149,7 +151,7 @@ export default function VaccineScreen() {
       await loadVaccines();
     } catch (e) {
       console.error("[VaccineScreen] add error:", e);
-      showAlert("Error", "Could not add vaccine.");
+      showAlert(t('error'), t('couldNotAddVaccine'));
     } finally {
       setFormSaving(false);
     }
@@ -159,7 +161,7 @@ export default function VaccineScreen() {
   if (!activeBaby) {
     return (
       <View style={s.centered}>
-        <Text style={s.emptyText}>No baby selected.</Text>
+        <Text style={s.emptyText}>{t('noBabySelectedShort')}</Text>
       </View>
     );
   }
@@ -209,7 +211,7 @@ export default function VaccineScreen() {
             <Text style={s.vaccineNotes}>{vaccine.notes}</Text>
           ) : null}
           {vaccine.isCompleted && vaccine.completedDate ? (
-            <Text style={s.completedLabel}>Done: {formatDate(vaccine.completedDate)}</Text>
+            <Text style={s.completedLabel}>{t('doneDate', { date: formatDate(vaccine.completedDate) })}</Text>
           ) : null}
         </View>
 
@@ -221,7 +223,7 @@ export default function VaccineScreen() {
               onPress={() => handleMarkDone(vaccine)}
               accessibilityRole="button"
             >
-              <Text style={s.markDoneBtnText}>Mark Done</Text>
+              <Text style={s.markDoneBtnText}>{t('markDone')}</Text>
             </TouchableOpacity>
           ) : null}
           {canEditBaby ? (
@@ -230,7 +232,7 @@ export default function VaccineScreen() {
               onPress={() => handleDelete(vaccine)}
               accessibilityRole="button"
             >
-              <Text style={s.deleteBtnText}>Delete</Text>
+              <Text style={s.deleteBtnText}>{t('delete')}</Text>
             </TouchableOpacity>
           ) : null}
         </View>
@@ -244,14 +246,14 @@ export default function VaccineScreen() {
       <ScrollView contentContainerStyle={s.container}>
         {/* Page header */}
         <View style={s.pageHeader}>
-          <Text style={s.pageTitle}>Vaccines — {activeBaby.name}</Text>
+          <Text style={s.pageTitle}>{t('vaccinesTitle', { name: activeBaby.name })}</Text>
           {canEditBaby ? (
             <TouchableOpacity
               style={s.addVaccineBtn}
               onPress={() => setModalVisible(true)}
               accessibilityRole="button"
             >
-              <Text style={s.addVaccineBtnText}>Add Vaccine</Text>
+              <Text style={s.addVaccineBtnText}>{t('addVaccineBtn')}</Text>
             </TouchableOpacity>
           ) : null}
         </View>
@@ -259,9 +261,9 @@ export default function VaccineScreen() {
         {/* Seed default schedule */}
         {vaccines.length === 0 && canEditBaby ? (
           <View style={s.seedCard}>
-            <Text style={s.seedTitle}>No vaccines yet</Text>
+            <Text style={s.seedTitle}>{t('noVaccinesYet')}</Text>
             <Text style={s.seedDesc}>
-              Добавяне на стандартния Национален имунизационен календар на РБ на база рождената дата на {activeBaby.name}.
+              {t('seedDefaultDesc', { name: activeBaby.name })}
             </Text>
             <TouchableOpacity
               style={[s.seedBtn, seeding && s.seedBtnDisabled]}
@@ -271,7 +273,7 @@ export default function VaccineScreen() {
             >
               {seeding
                 ? <ActivityIndicator color="#fff" />
-                : <Text style={s.seedBtnText}>Seed Default Schedule</Text>
+                : <Text style={s.seedBtnText}>{t('seedBtn')}</Text>
               }
             </TouchableOpacity>
           </View>
@@ -279,13 +281,13 @@ export default function VaccineScreen() {
 
         {/* Empty state (no vaccines, no edit permission) */}
         {vaccines.length === 0 && !canEditBaby ? (
-          <Text style={s.emptyText}>No vaccines logged yet.</Text>
+          <Text style={s.emptyText}>{t('noVaccinesNoEdit')}</Text>
         ) : null}
 
         {/* Upcoming section */}
         {upcoming.length > 0 ? (
           <View style={s.section}>
-            <Text style={s.sectionHeader}>Upcoming</Text>
+            <Text style={s.sectionHeader}>{t('upcoming')}</Text>
             {upcoming.map(renderVaccineRow)}
           </View>
         ) : null}
@@ -293,7 +295,7 @@ export default function VaccineScreen() {
         {/* Completed section */}
         {completed.length > 0 ? (
           <View style={s.section}>
-            <Text style={s.sectionHeader}>Completed</Text>
+            <Text style={s.sectionHeader}>{t('completed')}</Text>
             {completed.map(renderVaccineRow)}
           </View>
         ) : null}
@@ -314,9 +316,9 @@ export default function VaccineScreen() {
         >
         <View style={s.modalOverlay}>
           <View style={s.modalCard}>
-            <Text style={s.modalTitle}>Add Vaccine</Text>
+            <Text style={s.modalTitle}>{t('addVaccineModalTitle')}</Text>
 
-            <Text style={s.inputLabel}>Name *</Text>
+            <Text style={s.inputLabel}>{t('vaccineNameField')}</Text>
             <TextInput
               style={s.input}
               value={formName}
@@ -326,14 +328,14 @@ export default function VaccineScreen() {
               maxLength={100}
             />
 
-            <Text style={s.inputLabel}>Scheduled Date</Text>
+            <Text style={s.inputLabel}>{t('scheduledDateField')}</Text>
             <DatePickerInput
               value={formDate || null}
               onChange={setFormDate}
-              placeholder="Tap to choose date"
+              placeholder={t('vaccineTapToChooseDate')}
             />
 
-            <Text style={s.inputLabel}>Notes (optional)</Text>
+            <Text style={s.inputLabel}>{t('notesOptional')}</Text>
             <TextInput
               style={[s.input, s.notesInput]}
               value={formNotes}
@@ -349,7 +351,7 @@ export default function VaccineScreen() {
                 onPress={() => setModalVisible(false)}
                 accessibilityRole="button"
               >
-                <Text style={s.cancelBtnText}>Cancel</Text>
+                <Text style={s.cancelBtnText}>{t('cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[s.saveBtn, formSaving && s.saveBtnDisabled]}
@@ -359,7 +361,7 @@ export default function VaccineScreen() {
               >
                 {formSaving
                   ? <ActivityIndicator color="#fff" />
-                  : <Text style={s.saveBtnText}>Save</Text>
+                  : <Text style={s.saveBtnText}>{t('save')}</Text>
                 }
               </TouchableOpacity>
             </View>

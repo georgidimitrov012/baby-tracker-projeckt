@@ -9,11 +9,13 @@ import SleepTimerCard from "../../components/SleepTimerCard";
 import { useSleepTimer, formatElapsed } from "../../hooks/useSleepTimer";
 import { usePermissions } from "../../hooks/usePermissions";
 import { useTheme } from "../../context/ThemeContext";
+import { useLanguage } from "../../context/LanguageContext";
 
 export default function Sleep() {
   const { isActive, elapsedSeconds, startedAt } = useSleepTimer();
   const { canWriteEvents }                       = usePermissions();
   const { theme }                                = useTheme();
+  const { t }                                    = useLanguage();
   const s                                        = makeStyles(theme);
 
   const startTimeStr = startedAt
@@ -25,7 +27,7 @@ export default function Sleep() {
       style={{ flex: 1, backgroundColor: theme.background }}
       contentContainerStyle={s.container}
     >
-      <Text style={s.title}>Sleep Tracker 😴</Text>
+      <Text style={s.title}>{t('sleepTrackerTitle')}</Text>
 
       {/* Main timer card — handles start/stop logic internally */}
       <SleepTimerCard compact={false} />
@@ -34,22 +36,22 @@ export default function Sleep() {
       {isActive ? (
         <View style={s.infoCard}>
           <Text style={s.infoRow}>
-            🕐 Started at <Text style={s.infoBold}>{startTimeStr}</Text>
+            🕐 {t('startedAt')} <Text style={s.infoBold}>{startTimeStr}</Text>
           </Text>
           <Text style={s.infoRow}>
-            ⏱ Elapsed{" "}
+            ⏱ {t('elapsed')}{" "}
             <Text style={s.infoBold}>{formatElapsed(elapsedSeconds)}</Text>
           </Text>
           <Text style={s.infoNote}>
-            You can close the app — the timer is saved in the cloud and will still be correct when you return.
+            {t('cloudSaveNote')}
           </Text>
         </View>
       ) : (
         <View style={s.infoCard}>
           <Text style={s.infoNote}>
             {canWriteEvents
-              ? "Tap Start Sleep above when your baby falls asleep. The timer is visible to all parents in realtime."
-              : "You have read-only access. You can view active sleep sessions but cannot start or stop them."}
+              ? t('tapStartNote')
+              : t('readOnlySleepNote')}
           </Text>
         </View>
       )}

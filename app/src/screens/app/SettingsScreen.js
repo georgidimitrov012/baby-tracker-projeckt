@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { useBaby }                  from "../../context/BabyContext";
 import { useTheme }                 from "../../context/ThemeContext";
+import { useLanguage }              from "../../context/LanguageContext";
 import { usePermissions }           from "../../hooks/usePermissions";
 import { updateBabySettings }       from "../../services/babyService";
 import { cancelFeedingReminder, scheduleFeedingReminder } from "../../services/notificationService";
@@ -20,6 +21,7 @@ export default function SettingsScreen({ navigation }) {
   const { theme, isDark, isNight, nightModeEnabled, toggleTheme, toggleNightMode } = useTheme();
   const { activeBaby, activeBabyId }   = useBaby();
   const { canEditBaby }                = usePermissions();
+  const { t, language, changeLanguage } = useLanguage();
 
   const defaultHours = activeBaby?.settings?.feedingReminderHours ?? 3;
   const [reminderHours, setReminderHours] = useState(String(defaultHours));
@@ -36,11 +38,11 @@ export default function SettingsScreen({ navigation }) {
   const handleSaveReminder = async () => {
     const hours = parseFloat(reminderHours);
     if (isNaN(hours) || hours < 0.5 || hours > 12) {
-      showAlert("Invalid value", "Please enter a number between 0.5 and 12 hours.");
+      showAlert(t('invalidReminderValue'), t('invalidReminderMsg'));
       return;
     }
     if (!canEditBaby) {
-      showAlert("Permission denied", "You need admin or owner access to change baby settings.");
+      showAlert(t('permissionDeniedSettings'), t('permissionDeniedSettingsMsg'));
       return;
     }
     setSaving(true);
@@ -54,10 +56,10 @@ export default function SettingsScreen({ navigation }) {
       } else {
         await cancelFeedingReminder();
       }
-      showAlert("Saved", "Feeding reminder settings updated.");
+      showAlert(t('reminderSaved'), t('reminderSavedMsg'));
     } catch (e) {
       console.error("[Settings] save error:", e);
-      showAlert("Error", "Could not save settings. Please try again.");
+      showAlert(t('error'), t('couldNotSave'));
     } finally {
       setSaving(false);
     }
@@ -69,12 +71,12 @@ export default function SettingsScreen({ navigation }) {
     <ScrollView contentContainerStyle={s.container}>
 
       {/* ── Appearance ─────────────────────────────────── */}
-      <Text style={s.sectionHeader}>Appearance</Text>
+      <Text style={s.sectionHeader}>{t('appearance')}</Text>
       <View style={s.card}>
         <View style={s.row}>
           <View style={{ flex: 1 }}>
-            <Text style={s.settingLabel}>Dark Mode</Text>
-            <Text style={s.settingHint}>Easier on the eyes at night</Text>
+            <Text style={s.settingLabel}>{t('darkMode')}</Text>
+            <Text style={s.settingHint}>{t('darkModeHint')}</Text>
           </View>
           <Switch
             value={isDark}
@@ -85,8 +87,8 @@ export default function SettingsScreen({ navigation }) {
         </View>
         <View style={s.row}>
           <View style={{ flex: 1 }}>
-            <Text style={s.settingLabel}>Auto Night Mode</Text>
-            <Text style={s.settingHint}>Ultra-dim red theme 10pm–6am — perfect for 3am feeds</Text>
+            <Text style={s.settingLabel}>{t('autoNightMode')}</Text>
+            <Text style={s.settingHint}>{t('autoNightModeHint')}</Text>
           </View>
           <Switch
             value={nightModeEnabled}
@@ -98,14 +100,12 @@ export default function SettingsScreen({ navigation }) {
       </View>
 
       {/* ── Feeding Reminders ──────────────────────────── */}
-      <Text style={s.sectionHeader}>Feeding Reminders</Text>
+      <Text style={s.sectionHeader}>{t('feedingReminders')}</Text>
       <View style={s.card}>
         <View style={s.row}>
           <View style={{ flex: 1 }}>
-            <Text style={s.settingLabel}>Enable reminder</Text>
-            <Text style={s.settingHint}>
-              Get notified when it's time for the next feeding
-            </Text>
+            <Text style={s.settingLabel}>{t('enableReminder')}</Text>
+            <Text style={s.settingHint}>{t('enableReminderHint')}</Text>
           </View>
           <Switch
             value={reminderEnabled}
@@ -117,7 +117,7 @@ export default function SettingsScreen({ navigation }) {
 
         {reminderEnabled ? (
           <View style={s.reminderRow}>
-            <Text style={s.settingLabel}>Remind after</Text>
+            <Text style={s.settingLabel}>{t('remindAfter')}</Text>
             <View style={s.inputRow}>
               <TextInput
                 style={s.hoursInput}
@@ -127,14 +127,14 @@ export default function SettingsScreen({ navigation }) {
                 placeholder="3"
                 placeholderTextColor={theme.textMuted}
               />
-              <Text style={s.hoursUnit}>hours</Text>
+              <Text style={s.hoursUnit}>{t('hours')}</Text>
             </View>
-            <Text style={s.settingHint}>Default: 3 hours (range: 0.5–12)</Text>
+            <Text style={s.settingHint}>{t('reminderDefault')}</Text>
           </View>
         ) : null}
 
         {!activeBaby ? (
-          <Text style={s.nobabyNote}>No baby selected — select a baby to save settings.</Text>
+          <Text style={s.nobabyNote}>{t('noBabyForSettings')}</Text>
         ) : null}
 
         <TouchableOpacity
@@ -143,19 +143,44 @@ export default function SettingsScreen({ navigation }) {
           disabled={!activeBaby || saving}
           accessibilityRole="button"
         >
-          <Text style={s.saveBtnText}>{saving ? "Saving…" : "Save Reminder Settings"}</Text>
+          <Text style={s.saveBtnText}>{saving ? t('saving') : t('saveReminderSettings')}</Text>
         </TouchableOpacity>
       </View>
 
+      {/* ── Language ──────────────────────────────────── */}
+      <Text style={s.sectionHeader}>{t('languageSection')}</Text>
+      <View style={s.card}>
+        <View style={s.row}>
+          <TouchableOpacity
+            style={[s.langBtn, language === "en" && s.langBtnActive]}
+            onPress={() => changeLanguage("en")}
+            accessibilityRole="button"
+          >
+            <Text style={[s.langBtnText, language === "en" && s.langBtnTextActive]}>
+              {t('languageEnglish')}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[s.langBtn, language === "bg" && s.langBtnActive]}
+            onPress={() => changeLanguage("bg")}
+            accessibilityRole="button"
+          >
+            <Text style={[s.langBtnText, language === "bg" && s.langBtnTextActive]}>
+              {t('languageBulgarian')}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
       {/* ── Legal ─────────────────────────────────────── */}
-      <Text style={s.sectionHeader}>Legal</Text>
+      <Text style={s.sectionHeader}>{t('legal')}</Text>
       <View style={s.card}>
         <TouchableOpacity
           style={s.linkRow}
           onPress={() => navigation.navigate("PrivacyPolicy")}
           accessibilityRole="button"
         >
-          <Text style={s.linkText}>Privacy Policy</Text>
+          <Text style={s.linkText}>{t('privacyPolicy')}</Text>
           <Text style={s.chevron}>›</Text>
         </TouchableOpacity>
       </View>
@@ -252,6 +277,28 @@ const makeStyles = (theme) => StyleSheet.create({
     color: "#fff",
     fontSize: 14,
     fontWeight: "700",
+  },
+  langBtn: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 10,
+    alignItems: "center",
+    borderWidth: 1.5,
+    borderColor: theme.border,
+    backgroundColor: theme.background,
+    marginHorizontal: 4,
+  },
+  langBtnActive: {
+    borderColor: theme.primary,
+    backgroundColor: theme.primaryLight,
+  },
+  langBtnText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: theme.textSecondary,
+  },
+  langBtnTextActive: {
+    color: theme.primary,
   },
   linkRow: {
     flexDirection: "row",

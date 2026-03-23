@@ -8,8 +8,9 @@ import {
   StyleSheet,
   RefreshControl,
 } from "react-native";
-import { useAuth }  from "../../context/AuthContext";
-import { useBaby }  from "../../context/BabyContext";
+import { useAuth }      from "../../context/AuthContext";
+import { useBaby }      from "../../context/BabyContext";
+import { useLanguage }  from "../../context/LanguageContext";
 import {
   getPendingInvites,
   acceptInvite,
@@ -20,6 +21,7 @@ import { showAlert } from "../../utils/platform";
 export default function InvitesScreen() {
   const { user }          = useAuth();
   const { refreshBabies } = useBaby();
+  const { t }             = useLanguage();
 
   const [invites, setInvites]   = useState([]);
   const [loading, setLoading]   = useState(true);
@@ -53,12 +55,12 @@ export default function InvitesScreen() {
       setInvites((prev) => prev.filter((i) => i.id !== invite.id));
 
       showAlert(
-        "You're in! 🎉",
-        `You now have full access to ${invite.babyName}. Switch to them from the Dashboard.`
+        t('inviteAcceptedTitle'),
+        t('inviteAcceptedMsg', { baby: invite.babyName })
       );
     } catch (e) {
       console.error("[InvitesScreen] accept error:", e);
-      showAlert("Error", "Could not accept invite. Please try again.");
+      showAlert(t('error'), t('couldNotAcceptInvite'));
     } finally {
       setActingOn(null);
     }
@@ -70,7 +72,7 @@ export default function InvitesScreen() {
       await declineInvite(invite.id);
       setInvites((prev) => prev.filter((i) => i.id !== invite.id));
     } catch (e) {
-      showAlert("Error", "Could not decline invite. Please try again.");
+      showAlert(t('error'), t('couldNotDeclineInvite'));
     } finally {
       setActingOn(null);
     }
@@ -94,10 +96,8 @@ export default function InvitesScreen() {
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyIcon}>📬</Text>
-            <Text style={styles.emptyTitle}>No pending invites</Text>
-            <Text style={styles.emptySub}>
-              When another parent invites you to track their baby, it will appear here.
-            </Text>
+            <Text style={styles.emptyTitle}>{t('noPendingInvites')}</Text>
+            <Text style={styles.emptySub}>{t('noPendingInvitesDesc')}</Text>
           </View>
         }
         renderItem={({ item }) => {
@@ -108,7 +108,7 @@ export default function InvitesScreen() {
               <View style={styles.cardInfo}>
                 <Text style={styles.babyName}>{item.babyName}</Text>
                 <Text style={styles.fromText}>
-                  From <Text style={styles.fromName}>{item.fromName}</Text>
+                  {t('from')} <Text style={styles.fromName}>{item.fromName}</Text>
                 </Text>
               </View>
 
@@ -121,14 +121,14 @@ export default function InvitesScreen() {
                     onPress={() => handleAccept(item)}
                     accessibilityLabel="Accept invite"
                   >
-                    <Text style={styles.acceptText}>Accept</Text>
+                    <Text style={styles.acceptText}>{t('accept')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.actionBtn, styles.declineBtn]}
                     onPress={() => handleDecline(item)}
                     accessibilityLabel="Decline invite"
                   >
-                    <Text style={styles.declineText}>Decline</Text>
+                    <Text style={styles.declineText}>{t('decline')}</Text>
                   </TouchableOpacity>
                 </View>
               )}

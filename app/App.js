@@ -1,11 +1,12 @@
 import React from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import * as Notifications from "expo-notifications";
-import { AuthProvider }    from "./src/context/AuthContext";
-import { BabyProvider }    from "./src/context/BabyContext";
-import { ThemeProvider }   from "./src/context/ThemeContext";
-import RootNavigator       from "./src/navigation/RootNavigator";
-import ErrorBoundary       from "./src/components/ErrorBoundary";
+import { AuthProvider }     from "./src/context/AuthContext";
+import { BabyProvider }     from "./src/context/BabyContext";
+import { ThemeProvider }    from "./src/context/ThemeContext";
+import { LanguageProvider } from "./src/context/LanguageContext";
+import RootNavigator        from "./src/navigation/RootNavigator";
+import ErrorBoundary        from "./src/components/ErrorBoundary";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -24,15 +25,17 @@ Notifications.setNotificationHandler({
 export default function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider>
-        <AuthProvider>
-          <BabyProvider>
-            <NavigationContainer>
-              <RootNavigator />
-            </NavigationContainer>
-          </BabyProvider>
-        </AuthProvider>
-      </ThemeProvider>
+      <LanguageProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <BabyProvider>
+              <NavigationContainer>
+                <RootNavigator />
+              </NavigationContainer>
+            </BabyProvider>
+          </AuthProvider>
+        </ThemeProvider>
+      </LanguageProvider>
     </ErrorBoundary>
   );
 }

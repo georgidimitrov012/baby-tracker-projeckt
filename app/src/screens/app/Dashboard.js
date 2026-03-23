@@ -20,6 +20,7 @@ import { useEvents }              from "../../hooks/useEvents";
 import { useReminders }           from "../../hooks/useReminders";
 import { useNapPredictor }        from "../../hooks/useNapPredictor";
 import { useTheme }               from "../../context/ThemeContext";
+import { useLanguage }            from "../../context/LanguageContext";
 import RoleBadge                  from "../../components/RoleBadge";
 import SleepTimerCard             from "../../components/SleepTimerCard";
 import OfflineBanner              from "../../components/OfflineBanner";
@@ -30,12 +31,12 @@ import { updateDoc, doc }         from "firebase/firestore";
 import { db }                     from "../../services/firebase";
 import { getBabyAge }             from "../../utils/babyAge";
 
-function getGreeting() {
+function getGreeting(t) {
   const h = new Date().getHours();
-  if (h >= 5  && h < 12) return "Good morning ☀️";
-  if (h >= 12 && h < 18) return "Good afternoon 🌤";
-  if (h >= 18 && h < 22) return "Good evening 🌙";
-  return "Night mode 🌛";
+  if (h >= 5  && h < 12) return t('goodMorning');
+  if (h >= 12 && h < 18) return t('goodAfternoon');
+  if (h >= 18 && h < 22) return t('goodEvening');
+  return t('nightMode');
 }
 
 function timeAgo(date) {
@@ -52,6 +53,7 @@ function timeAgo(date) {
 // ── Handoff Note Card ──────────────────────────────────────────────────────────
 function HandoffNoteCard({ activeBaby, activeBabyId, canWrite, user }) {
   const { theme } = useTheme();
+  const { t } = useLanguage();
   const s = makeHandoffStyles(theme);
   const [modalVisible, setModalVisible] = useState(false);
   const [draftText, setDraftText]       = useState("");
@@ -76,7 +78,7 @@ function HandoffNoteCard({ activeBaby, activeBabyId, canWrite, user }) {
       });
       setModalVisible(false);
     } catch (e) {
-      showAlert("Error", "Could not save note. Please try again.");
+      showAlert(t('error'), t('couldNotSaveNote'));
     } finally {
       setSaving(false);
     }
@@ -88,7 +90,7 @@ function HandoffNoteCard({ activeBaby, activeBabyId, canWrite, user }) {
     <>
       <View style={s.card}>
         <View style={s.cardHeader}>
-          <Text style={s.cardTitle}>📝 Handoff Note</Text>
+          <Text style={s.cardTitle}>{t('handoffNote')}</Text>
           {canWrite ? (
             <TouchableOpacity
               onPress={openEdit}
@@ -96,7 +98,7 @@ function HandoffNoteCard({ activeBaby, activeBabyId, canWrite, user }) {
               accessibilityRole="button"
               accessibilityLabel="Edit handoff note"
             >
-              <Text style={s.editBtnText}>Edit</Text>
+              <Text style={s.editBtnText}>{t('edit')}</Text>
             </TouchableOpacity>
           ) : null}
         </View>
@@ -112,7 +114,7 @@ function HandoffNoteCard({ activeBaby, activeBabyId, canWrite, user }) {
           </>
         ) : (
           <TouchableOpacity onPress={openEdit}>
-            <Text style={s.emptyText}>Tap Edit to leave a note for your co-parent…</Text>
+            <Text style={s.emptyText}>{t('tapEditToLeaveNote')}</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -123,27 +125,27 @@ function HandoffNoteCard({ activeBaby, activeBabyId, canWrite, user }) {
           behavior={Platform.OS === "ios" ? "padding" : "height"}
         >
           <View style={s.modalCard}>
-            <Text style={s.modalTitle}>Handoff Note</Text>
-            <Text style={s.modalHint}>Let your co-parent know what happened</Text>
+            <Text style={s.modalTitle}>{t('handoffNoteTitle')}</Text>
+            <Text style={s.modalHint}>{t('letCoParentKnow')}</Text>
             <TextInput
               style={s.modalInput}
               value={draftText}
               onChangeText={setDraftText}
-              placeholder="e.g. Fed at 2pm, gas drops given, a bit fussy…"
+              placeholder={t('handoffPlaceholder')}
               placeholderTextColor={theme.placeholder}
               multiline
               autoFocus
             />
             <View style={s.modalBtns}>
               <TouchableOpacity style={s.cancelBtn} onPress={() => setModalVisible(false)}>
-                <Text style={s.cancelBtnText}>Cancel</Text>
+                <Text style={s.cancelBtnText}>{t('cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[s.saveBtn, saving && { opacity: 0.6 }]}
                 onPress={handleSave}
                 disabled={saving}
               >
-                <Text style={s.saveBtnText}>{saving ? "Saving…" : "Save"}</Text>
+                <Text style={s.saveBtnText}>{saving ? t('saving') : t('save')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -232,6 +234,7 @@ const makeHandoffStyles = (theme) => StyleSheet.create({
 // ── Nap Predictor Card ─────────────────────────────────────────────────────────
 function NapPredictorCard({ napInfo }) {
   const { theme } = useTheme();
+  const { t } = useLanguage();
   if (!napInfo?.recommendation) return null;
   const bg     = napInfo.overdue ? theme.warningLight : theme.successLight;
   const accent = napInfo.overdue ? theme.warning      : theme.success;
@@ -243,10 +246,10 @@ function NapPredictorCard({ napInfo }) {
     <View style={[napCardStyle.card, { backgroundColor: bg, borderLeftColor: accent }]}>
       <Text style={napCardStyle.icon}>🛏️</Text>
       <View style={napCardStyle.textWrap}>
-        <Text style={[napCardStyle.title, { color: accent }]}>Nap Predictor</Text>
+        <Text style={[napCardStyle.title, { color: accent }]}>{t('napPredictor')}</Text>
         <Text style={[napCardStyle.value, { color: accent }]}>{napInfo.recommendation}</Text>
         {wwLabel ? (
-          <Text style={[napCardStyle.sub, { color: accent + "99" }]}>Wake window: {wwLabel}</Text>
+          <Text style={[napCardStyle.sub, { color: accent + "99" }]}>{t('wakeWindow')} {wwLabel}</Text>
         ) : null}
       </View>
     </View>
@@ -270,17 +273,16 @@ const napCardStyle = StyleSheet.create({
   sub: { fontSize: 11, marginTop: 2 },
 });
 
-// ── Activity types ─────────────────────────────────────────────────────────────
-const ACTIVITY_TYPES = [
-  { type: "feeding", icon: "🍼", label: "Fed",   color: "#F4845F" },
-  { type: "sleep",   icon: "😴", label: "Slept", color: "#7B5EA7" },
-  { type: "poop",    icon: "💩", label: "Poop",  color: "#E88C3A" },
-  { type: "pee",     icon: "💧", label: "Pee",   color: "#47A67E" },
-];
-
-function LastActivityCard({ events }) {
+function LastActivityCard({ events, t }) {
   const { theme } = useTheme();
   const s = makeStyles(theme);
+
+  const ACTIVITY_TYPES = [
+    { type: "feeding", icon: "🍼", label: t('fed'),       color: "#F4845F" },
+    { type: "sleep",   icon: "😴", label: t('slept'),     color: "#7B5EA7" },
+    { type: "poop",    icon: "💩", label: t('poopLabel'), color: "#E88C3A" },
+    { type: "pee",     icon: "💧", label: t('peeLabel'),  color: "#47A67E" },
+  ];
 
   if (!events || events.length === 0) return null;
 
@@ -294,7 +296,7 @@ function LastActivityCard({ events }) {
 
   return (
     <View style={s.activityCard}>
-      <Text style={s.sectionLabel}>Last Activity</Text>
+      <Text style={s.sectionLabel}>{t('lastActivity')}</Text>
       <View style={s.activityRow}>
         {items.map(({ type, icon, label, color }) => (
           <View key={type} style={s.activityItem}>
@@ -311,23 +313,23 @@ function LastActivityCard({ events }) {
 }
 
 const NAV_CARDS = [
-  { screen: "Analytics",     icon: "📊", label: "Analytics",  color: "#E8F6F0", iconColor: "#47A67E" },
-  { screen: "History",       icon: "📋", label: "History",    color: "#F0EAFF", iconColor: "#7B5EA7" },
-  { screen: "Growth",        icon: "📏", label: "Growth",     color: "#FFF8EC", iconColor: "#E88C3A" },
-  { screen: "Milestones",    icon: "🎯", label: "Milestones", color: "#FFF0EB", iconColor: "#F4845F" },
-  { screen: "Vaccines",      icon: "💉", label: "Vaccines",   color: "#EBF4FF", iconColor: "#4A8FD6" },
-  { screen: "Invites",       icon: "📬", label: "Invites",    color: "#F0EAFF", iconColor: "#7B5EA7" },
-  { screen: "ManageMembers", icon: "👥", label: "Members",    color: "#E8F6F0", iconColor: "#47A67E" },
+  { screen: "Analytics",     icon: "📊", labelKey: "navAnalytics",  color: "#E8F6F0", iconColor: "#47A67E" },
+  { screen: "History",       icon: "📋", labelKey: "navHistory",    color: "#F0EAFF", iconColor: "#7B5EA7" },
+  { screen: "Growth",        icon: "📏", labelKey: "navGrowth",     color: "#FFF8EC", iconColor: "#E88C3A" },
+  { screen: "Milestones",    icon: "🎯", labelKey: "navMilestones", color: "#FFF0EB", iconColor: "#F4845F" },
+  { screen: "Vaccines",      icon: "💉", labelKey: "navVaccines",   color: "#EBF4FF", iconColor: "#4A8FD6" },
+  { screen: "Invites",       icon: "📬", labelKey: "navInvites",    color: "#F0EAFF", iconColor: "#7B5EA7" },
+  { screen: "ManageMembers", icon: "👥", labelKey: "navMembers",    color: "#E8F6F0", iconColor: "#47A67E" },
 ];
 
 const NAV_CARDS_DARK = [
-  { screen: "Analytics",     icon: "📊", label: "Analytics",  color: "#1A2E26", iconColor: "#6BC99A" },
-  { screen: "History",       icon: "📋", label: "History",    color: "#2A2250", iconColor: "#9B7ED0" },
-  { screen: "Growth",        icon: "📏", label: "Growth",     color: "#2A1E10", iconColor: "#F5A660" },
-  { screen: "Milestones",    icon: "🎯", label: "Milestones", color: "#2A1810", iconColor: "#F4845F" },
-  { screen: "Vaccines",      icon: "💉", label: "Vaccines",   color: "#102030", iconColor: "#6AABF0" },
-  { screen: "Invites",       icon: "📬", label: "Invites",    color: "#2A2250", iconColor: "#9B7ED0" },
-  { screen: "ManageMembers", icon: "👥", label: "Members",    color: "#1A2E26", iconColor: "#6BC99A" },
+  { screen: "Analytics",     icon: "📊", labelKey: "navAnalytics",  color: "#1A2E26", iconColor: "#6BC99A" },
+  { screen: "History",       icon: "📋", labelKey: "navHistory",    color: "#2A2250", iconColor: "#9B7ED0" },
+  { screen: "Growth",        icon: "📏", labelKey: "navGrowth",     color: "#2A1E10", iconColor: "#F5A660" },
+  { screen: "Milestones",    icon: "🎯", labelKey: "navMilestones", color: "#2A1810", iconColor: "#F4845F" },
+  { screen: "Vaccines",      icon: "💉", labelKey: "navVaccines",   color: "#102030", iconColor: "#6AABF0" },
+  { screen: "Invites",       icon: "📬", labelKey: "navInvites",    color: "#2A2250", iconColor: "#9B7ED0" },
+  { screen: "ManageMembers", icon: "👥", labelKey: "navMembers",    color: "#1A2E26", iconColor: "#6BC99A" },
 ];
 
 export default function Dashboard({ navigation }) {
@@ -337,6 +339,7 @@ export default function Dashboard({ navigation }) {
   const { isActive }                                = useSleepTimer();
   const { events }                                  = useEvents(activeBabyId);
   const { theme, isDark }                           = useTheme();
+  const { t }                                       = useLanguage();
   const napInfo                                     = useNapPredictor(events, activeBaby?.birthDate);
   useReminders(events, activeBaby);
 
@@ -356,14 +359,14 @@ export default function Dashboard({ navigation }) {
   }, [activeBaby?.name]);
 
   const handleLogout = async () => {
-    const confirmed = await showConfirm("Sign Out", "Are you sure you want to sign out?");
+    const confirmed = await showConfirm(t('signOut'), t('signOutConfirm'));
     if (!confirmed || isLoggingOut.current) return;
     isLoggingOut.current = true;
     setLoggingOut(true);
     try {
       await logoutUser();
     } catch (e) {
-      showAlert("Error", "Could not sign out. Please try again.");
+      showAlert(t('error'), t('couldNotSignOut'));
       isLoggingOut.current = false;
       setLoggingOut(false);
     }
@@ -384,7 +387,7 @@ export default function Dashboard({ navigation }) {
     } catch (e) {
       console.error(`[Dashboard] quick log ${type} error:`, e);
       quickLogInFlight.current[type] = false;
-      showAlert("Error", "Could not log event. Please try again.");
+      showAlert(t('error'), t('couldNotLogEvent'));
     }
   };
 
@@ -399,7 +402,7 @@ export default function Dashboard({ navigation }) {
       {/* Header */}
       <View style={s.header}>
         <View style={s.headerLeft}>
-          <Text style={s.greeting}>{getGreeting()}</Text>
+          <Text style={s.greeting}>{getGreeting(t)}</Text>
           <Text style={s.userName}>{user?.displayName ?? "there"}</Text>
         </View>
         <View style={s.headerRight}>
@@ -439,13 +442,13 @@ export default function Dashboard({ navigation }) {
             <Text style={s.babyCardIcon}>{activeBaby ? "👶" : "⚠️"}</Text>
             <View style={s.babyCardText}>
               <Text style={s.babyCardName}>
-                {activeBaby ? activeBaby.name : "No baby selected"}
+                {activeBaby ? activeBaby.name : t('noBabySelected')}
               </Text>
               {babyAge ? (
                 <Text style={s.babyCardAge}>{babyAge}</Text>
               ) : null}
               <Text style={s.babyCardSub}>
-                {activeBaby ? "Tap to switch or manage babies" : "Tap to add a baby"}
+                {activeBaby ? t('tapToSwitch') : t('tapToAddBaby')}
               </Text>
             </View>
             <Text style={s.babyCardChevron}>›</Text>
@@ -469,13 +472,13 @@ export default function Dashboard({ navigation }) {
       {!canWriteEvents && activeBaby ? (
         <View style={s.readOnlyBanner}>
           <Text style={s.readOnlyText}>
-            👁 Read-only access — you can view but not log events
+            {t('readOnlyBanner')}
           </Text>
         </View>
       ) : null}
 
       {/* Last activity */}
-      {activeBaby ? <LastActivityCard events={events} /> : null}
+      {activeBaby ? <LastActivityCard events={events} t={t} /> : null}
 
       {/* Nap predictor */}
       {activeBaby ? <NapPredictorCard napInfo={napInfo} /> : null}
@@ -486,7 +489,7 @@ export default function Dashboard({ navigation }) {
       {/* Quick log */}
       {canWriteEvents && activeBaby ? (
         <View style={s.quickLogSection}>
-          <Text style={s.sectionLabel}>Quick Log</Text>
+          <Text style={s.sectionLabel}>{t('quickLog')}</Text>
           <View style={s.quickLogRow}>
             <TouchableOpacity
               style={s.quickLogBtn}
@@ -495,7 +498,7 @@ export default function Dashboard({ navigation }) {
               accessibilityLabel="Log feeding"
             >
               <Text style={s.quickLogEmoji}>🍼</Text>
-              <Text style={s.quickLogText}>Feed</Text>
+              <Text style={s.quickLogText}>{t('feedBtn')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -507,7 +510,7 @@ export default function Dashboard({ navigation }) {
               <Text style={s.quickLogEmoji}>
                 {quickLogSuccess.poop ? "✅" : "💩"}
               </Text>
-              <Text style={s.quickLogText}>Poop</Text>
+              <Text style={s.quickLogText}>{t('poopBtn')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -519,7 +522,7 @@ export default function Dashboard({ navigation }) {
               <Text style={s.quickLogEmoji}>
                 {quickLogSuccess.pee ? "✅" : "💧"}
               </Text>
-              <Text style={s.quickLogText}>Pee</Text>
+              <Text style={s.quickLogText}>{t('peeBtn')}</Text>
             </TouchableOpacity>
 
             {!isActive ? (
@@ -530,7 +533,7 @@ export default function Dashboard({ navigation }) {
                 accessibilityLabel="Log sleep"
               >
                 <Text style={s.quickLogEmoji}>😴</Text>
-                <Text style={s.quickLogText}>Sleep</Text>
+                <Text style={s.quickLogText}>{t('sleepBtn')}</Text>
               </TouchableOpacity>
             ) : null}
           </View>
@@ -538,18 +541,18 @@ export default function Dashboard({ navigation }) {
       ) : null}
 
       {/* Nav grid */}
-      <Text style={s.sectionLabel}>Explore</Text>
+      <Text style={s.sectionLabel}>{t('explore')}</Text>
       <View style={s.grid}>
-        {navCards.map(({ screen, icon, label, color, iconColor }) => (
+        {navCards.map(({ screen, icon, labelKey, color, iconColor }) => (
           <TouchableOpacity
             key={screen}
             style={[s.gridCard, { backgroundColor: color }]}
             onPress={() => navigation.navigate(screen)}
             accessibilityRole="button"
-            accessibilityLabel={label}
+            accessibilityLabel={t(labelKey)}
           >
             <Text style={s.gridIcon}>{icon}</Text>
-            <Text style={[s.gridLabel, { color: iconColor }]}>{label}</Text>
+            <Text style={[s.gridLabel, { color: iconColor }]}>{t(labelKey)}</Text>
           </TouchableOpacity>
         ))}
       </View>

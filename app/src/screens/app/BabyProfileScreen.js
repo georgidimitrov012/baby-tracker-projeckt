@@ -14,6 +14,7 @@ import {
 import { Timestamp, deleteDoc, doc } from "firebase/firestore";
 import { useBaby }          from "../../context/BabyContext";
 import { usePermissions }   from "../../hooks/usePermissions";
+import { useLanguage }      from "../../context/LanguageContext";
 import { updateBaby }       from "../../services/babyService";
 import { db }               from "../../services/firebase";
 import { uploadBabyPhoto }  from "../../services/storageService";
@@ -40,6 +41,7 @@ export default function BabyProfileScreen({ route, navigation }) {
   const { babyId }           = route.params;
   const { babies }           = useBaby();
   const { canEditBaby, canDeleteBaby } = usePermissions();
+  const { t }                = useLanguage();
 
   const baby = babies.find((b) => b.id === babyId);
 
@@ -58,13 +60,13 @@ export default function BabyProfileScreen({ route, navigation }) {
     if (isSubmitting.current) return;
 
     if (!name.trim()) {
-      setNameError("Name is required.");
+      setNameError(t('nameIsRequired'));
       return;
     }
     setNameError(null);
 
     if (!canEditBaby) {
-      showAlert("Permission denied", "You don't have permission to edit this baby's profile.");
+      showAlert(t('readOnly'), t('permissionDeniedEdit'));
       return;
     }
 
@@ -76,7 +78,7 @@ export default function BabyProfileScreen({ route, navigation }) {
       if (birthDate.trim()) {
         const d = new Date(birthDate.trim());
         if (isNaN(d.getTime())) {
-          showAlert("Invalid date", "Please enter the birth date in YYYY-MM-DD format.");
+          showAlert(t('invalidDate'), t('invalidDateMsg'));
           return;
         }
         parsedDate = d;
@@ -92,7 +94,7 @@ export default function BabyProfileScreen({ route, navigation }) {
       navigation.goBack();
     } catch (e) {
       console.error("[BabyProfile] save error:", e);
-      showAlert("Error", "Could not save changes. Please try again.");
+      showAlert(t('error'), t('couldNotSaveProfile'));
     } finally {
       isSubmitting.current = false;
       setSaving(false);
@@ -101,19 +103,19 @@ export default function BabyProfileScreen({ route, navigation }) {
 
   const handleChangePhoto = async () => {
     if (!canEditBaby) {
-      showAlert("Permission denied", "You need admin or owner access to change the photo.");
+      showAlert(t('readOnly'), t('permissionDeniedChangePhoto'));
       return;
     }
     setUploadingPhoto(true);
     try {
       const result = await pickAndEncodePhoto();
       if (result.cancelled) return;
-      if (result.error) { showAlert("Error", result.error); return; }
+      if (result.error) { showAlert(t('error'), result.error); return; }
       const url = await uploadBabyPhoto(babyId, result.base64);
       await updateBaby(babyId, { photoURL: url });
     } catch (e) {
       console.error("[BabyProfile] photo upload error:", e);
-      showAlert("Error", "Could not upload photo. Please try again.");
+      showAlert(t('error'), t('couldNotUploadPhoto'));
     } finally {
       setUploadingPhoto(false);
     }
@@ -121,13 +123,13 @@ export default function BabyProfileScreen({ route, navigation }) {
 
   const handleDelete = async () => {
     if (!canDeleteBaby) {
-      showAlert("Permission denied", "You don't have permission to delete this baby.");
+      showAlert(t('readOnly'), t('permissionDeniedDelete'));
       return;
     }
 
     const confirmed = await showConfirm(
-      "Delete Baby",
-      `Are you sure you want to delete "${baby?.name ?? "this baby"}"? This action cannot be undone.`
+      t('deleteBaby'),
+      t('deleteBabyConfirm', { name: baby?.name ?? "this baby" })
     );
     if (!confirmed) return;
 
@@ -138,7 +140,7 @@ export default function BabyProfileScreen({ route, navigation }) {
       navigation.goBack();
     } catch (e) {
       console.error("[BabyProfile] delete error:", e);
-      showAlert("Error", "Could not delete baby. Please try again.");
+      showAlert(t('error'), t('couldNotDeleteBaby'));
       setDeleting(false);
     }
   };
@@ -146,7 +148,7 @@ export default function BabyProfileScreen({ route, navigation }) {
   if (!baby) {
     return (
       <View style={styles.centered}>
-        <Text style={styles.errorText}>Baby not found.</Text>
+        <Text style={styles.errorText}>{t('babyNotFound')}</Text>
       </View>
     );
   }
@@ -178,16 +180,16 @@ export default function BabyProfileScreen({ route, navigation }) {
             >
               {uploadingPhoto
                 ? <ActivityIndicator size="small" color="#1565c0" />
-                : <Text style={styles.photoBtnText}>📷 Change Photo</Text>
+                : <Text style={styles.photoBtnText}>{t('changePhoto')}</Text>
               }
             </TouchableOpacity>
           ) : null}
         </View>
 
-        <Text style={styles.title}>Baby Profile</Text>
+        <Text style={styles.title}>{t('babyProfileTitle')}</Text>
 
         <FormInput
-          label="Name"
+          label={t('nameField')}
           value={name}
           onChangeText={(v) => {
             setName(v);
@@ -198,17 +200,17 @@ export default function BabyProfileScreen({ route, navigation }) {
           editable={canEditBaby}
         />
 
-        <Text style={styles.fieldLabel}>Birth Date</Text>
+        <Text style={styles.fieldLabel}>{t('birthDateField')}</Text>
         <DatePickerInput
           value={birthDate || null}
           onChange={setBirthDate}
-          placeholder="Tap to choose birth date"
+          placeholder={t('tapChooseBirthDate')}
           disabled={!canEditBaby}
           maxDate={new Date()}
         />
 
         <FormInput
-          label="Weight"
+          label={t('weightField')}
           value={weight}
           onChangeText={setWeight}
           placeholder="e.g. 3.5"
@@ -227,12 +229,12 @@ export default function BabyProfileScreen({ route, navigation }) {
           >
             {saving
               ? <ActivityIndicator color="#fff" />
-              : <Text style={styles.saveBtnText}>Save Changes</Text>
+              : <Text style={styles.saveBtnText}>{t('saveChanges')}</Text>
             }
           </TouchableOpacity>
         ) : (
           <Text style={styles.readOnlyNote}>
-            You have read-only access and cannot edit this profile.
+            {t('readOnlyCannotEditProfile')}
           </Text>
         )}
 
@@ -242,7 +244,7 @@ export default function BabyProfileScreen({ route, navigation }) {
           onPress={() => navigation.navigate("Growth", { babyId })}
           accessibilityRole="button"
         >
-          <Text style={styles.growthBtnText}>📏 View Growth Chart</Text>
+          <Text style={styles.growthBtnText}>{t('viewGrowthChart')}</Text>
         </TouchableOpacity>
 
         {canDeleteBaby ? (
@@ -255,7 +257,7 @@ export default function BabyProfileScreen({ route, navigation }) {
           >
             {deleting
               ? <ActivityIndicator color="#fff" />
-              : <Text style={styles.deleteBtnText}>Delete Baby</Text>
+              : <Text style={styles.deleteBtnText}>{t('deleteThisBaby')}</Text>
             }
           </TouchableOpacity>
         ) : null}

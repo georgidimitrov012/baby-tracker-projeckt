@@ -13,9 +13,11 @@ import {
 import { registerUser } from "../../services/authService";
 import { useBaby }      from "../../context/BabyContext";
 import { useTheme }     from "../../context/ThemeContext";
+import { useLanguage }  from "../../context/LanguageContext";
 
 export default function RegisterScreen({ navigation }) {
   const { theme } = useTheme();
+  const { t } = useLanguage();
   const s = makeStyles(theme);
   const { addBaby } = useBaby();
 
@@ -33,13 +35,13 @@ export default function RegisterScreen({ navigation }) {
     setError(null);
 
     // Validate account fields
-    if (!displayName.trim()) { setError("Please enter your name."); return; }
-    if (!email.trim())       { setError("Please enter your email."); return; }
-    if (password.length < 6) { setError("Password must be at least 6 characters."); return; }
+    if (!displayName.trim()) { setError(t('enterName')); return; }
+    if (!email.trim())       { setError(t('enterEmail')); return; }
+    if (password.length < 6) { setError(t('passwordTooShort')); return; }
 
     // Only validate baby name if the user chose to add one
     if (addingBaby && !babyName.trim()) {
-      setError("Please enter your baby's name, or uncheck 'Add a baby'.");
+      setError(t('enterBabyNameOrUncheck'));
       return;
     }
 
@@ -60,7 +62,7 @@ export default function RegisterScreen({ navigation }) {
       // the user to add one or wait for an invite.
     } catch (e) {
       console.error("[Register] error:", e);
-      setError(friendlyError(e.code));
+      setError(t(friendlyError(e.code)));
     } finally {
       isSubmitting.current = false;
       setLoading(false);
@@ -79,8 +81,8 @@ export default function RegisterScreen({ navigation }) {
       >
         <View style={s.hero}>
           <Text style={s.logo}>👶</Text>
-          <Text style={s.title}>Create your account</Text>
-          <Text style={s.tagline}>Start tracking from day one 💜</Text>
+          <Text style={s.title}>{t('createAccount')}</Text>
+          <Text style={s.tagline}>{t('trackingTagline')}</Text>
         </View>
 
         {error ? (
@@ -92,7 +94,7 @@ export default function RegisterScreen({ navigation }) {
         <View style={s.form}>
 
           {/* Account fields */}
-          <Text style={s.label}>Your Name</Text>
+          <Text style={s.label}>{t('yourName')}</Text>
           <TextInput
             style={s.input}
             value={displayName}
@@ -103,7 +105,7 @@ export default function RegisterScreen({ navigation }) {
             returnKeyType="next"
           />
 
-          <Text style={s.label}>Email</Text>
+          <Text style={s.label}>{t('email')}</Text>
           <TextInput
             style={s.input}
             value={email}
@@ -116,12 +118,12 @@ export default function RegisterScreen({ navigation }) {
             returnKeyType="next"
           />
 
-          <Text style={s.label}>Password</Text>
+          <Text style={s.label}>{t('password')}</Text>
           <TextInput
             style={s.input}
             value={password}
             onChangeText={setPassword}
-            placeholder="At least 6 characters"
+            placeholder={t('atLeast6Chars')}
             placeholderTextColor={theme.placeholder}
             secureTextEntry
             returnKeyType={addingBaby ? "next" : "done"}
@@ -142,16 +144,16 @@ export default function RegisterScreen({ navigation }) {
               {addingBaby ? <Text style={s.checkmark}>✓</Text> : null}
             </View>
             <View style={s.toggleTextBlock}>
-              <Text style={s.toggleLabel}>Add a baby now</Text>
+              <Text style={s.toggleLabel}>{t('addBabyNow')}</Text>
               <Text style={s.toggleSub}>
-                Skip if you were invited by another parent or are a pediatrician
+                {t('skipInviteHint')}
               </Text>
             </View>
           </TouchableOpacity>
 
           {addingBaby ? (
             <View style={s.babySection}>
-              <Text style={s.label}>Baby's Name</Text>
+              <Text style={s.label}>{t('babyName')}</Text>
               <TextInput
                 style={s.input}
                 value={babyName}
@@ -166,7 +168,7 @@ export default function RegisterScreen({ navigation }) {
           ) : (
             <View style={s.skipNote}>
               <Text style={s.skipNoteText}>
-                💡 You can add a baby later from the Dashboard, or accept an invite from another parent.
+                {t('addBabyLaterHint')}
               </Text>
             </View>
           )}
@@ -181,7 +183,7 @@ export default function RegisterScreen({ navigation }) {
         >
           {loading
             ? <ActivityIndicator color="#fff" />
-            : <Text style={s.btnText}>Create Account</Text>
+            : <Text style={s.btnText}>{t('createAccountBtn')}</Text>
           }
         </TouchableOpacity>
 
@@ -191,8 +193,8 @@ export default function RegisterScreen({ navigation }) {
           accessibilityRole="button"
         >
           <Text style={s.linkText}>
-            Already have an account?{" "}
-            <Text style={s.linkBold}>Sign in</Text>
+            {t('alreadyHaveAccount')}{" "}
+            <Text style={s.linkBold}>{t('signIn')}</Text>
           </Text>
         </TouchableOpacity>
       </ScrollView>
@@ -202,16 +204,11 @@ export default function RegisterScreen({ navigation }) {
 
 function friendlyError(code) {
   switch (code) {
-    case "auth/email-already-in-use":
-      return "An account with this email already exists.";
-    case "auth/invalid-email":
-      return "Please enter a valid email address.";
-    case "auth/weak-password":
-      return "Password must be at least 6 characters.";
-    case "auth/network-request-failed":
-      return "Network error. Check your connection.";
-    default:
-      return "Registration failed. Please try again.";
+    case "auth/email-already-in-use": return 'emailAlreadyInUse';
+    case "auth/invalid-email": return 'invalidEmail';
+    case "auth/weak-password": return 'weakPassword';
+    case "auth/network-request-failed": return 'networkError';
+    default: return 'registrationFailed';
   }
 }
 

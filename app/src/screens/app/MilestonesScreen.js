@@ -10,18 +10,12 @@ import {
 } from "react-native";
 import { useBaby }           from "../../context/BabyContext";
 import { useTheme }          from "../../context/ThemeContext";
+import { useLanguage }       from "../../context/LanguageContext";
 import { usePermissions }    from "../../hooks/usePermissions";
 import { useMilestones }     from "../../hooks/useMilestones";
 import { validateMilestoneTitle } from "../../utils/validation";
 import { showAlert, showConfirm } from "../../utils/platform";
 
-const CATEGORIES = [
-  { key: "motor",   label: "🏃 Motor"   },
-  { key: "social",  label: "😊 Social"  },
-  { key: "feeding", label: "🍼 Feeding" },
-  { key: "health",  label: "💊 Health"  },
-  { key: "other",   label: "⭐ Other"   },
-];
 
 function dateKey(date) {
   const d = date instanceof Date ? date : new Date(date);
@@ -40,7 +34,16 @@ function formatDate(date) {
 export default function MilestonesScreen() {
   const { activeBaby, activeBabyId } = useBaby();
   const { theme }                    = useTheme();
+  const { t }                        = useLanguage();
   const { canWriteEvents }           = usePermissions();
+
+  const CATEGORIES = [
+    { key: "motor",   label: t('categoryMotor')   },
+    { key: "social",  label: t('categorySocial')  },
+    { key: "feeding", label: t('categoryFeeding') },
+    { key: "health",  label: t('categoryHealth')  },
+    { key: "other",   label: t('categoryOther')   },
+  ];
   const { milestones, loading, error, addItem, removeItem } = useMilestones(activeBabyId);
 
   const [title, setTitle]       = useState("");
@@ -57,7 +60,7 @@ export default function MilestonesScreen() {
 
     const date = new Date(dateStr);
     if (isNaN(date.getTime())) {
-      showAlert("Invalid date", "Please use YYYY-MM-DD format.");
+      showAlert(t('invalidDate'), t('invalidDateMsg'));
       return;
     }
 
@@ -69,19 +72,19 @@ export default function MilestonesScreen() {
       setDateStr(dateKey(new Date()));
     } catch (e) {
       console.error("[Milestones] add error:", e);
-      showAlert("Error", "Could not save milestone. Please try again.");
+      showAlert(t('error'), t('couldNotSaveMilestone'));
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (item) => {
-    const ok = await showConfirm("Delete Milestone", `Delete "${item.title}"?`);
+    const ok = await showConfirm(t('deleteMilestone'), t('deleteMilestoneConfirm', { title: item.title }));
     if (!ok) return;
     try {
       await removeItem(item.id);
     } catch (e) {
-      showAlert("Error", "Could not delete milestone.");
+      showAlert(t('error'), t('couldNotDeleteMilestone'));
     }
   };
 
@@ -90,7 +93,7 @@ export default function MilestonesScreen() {
   if (!activeBaby) {
     return (
       <View style={s.centered}>
-        <Text style={s.emptyText}>No baby selected.</Text>
+        <Text style={s.emptyText}>{t('noBabySelectedShort')}</Text>
       </View>
     );
   }
@@ -107,14 +110,14 @@ export default function MilestonesScreen() {
 
   return (
     <ScrollView contentContainerStyle={s.container}>
-      <Text style={s.title}>🎯 Milestones — {activeBaby.name}</Text>
+      <Text style={s.title}>{t('milestonesTitle', { name: activeBaby.name })}</Text>
 
       {/* Add form */}
       {canWriteEvents ? (
         <View style={s.card}>
-          <Text style={s.sectionHeader}>Add Milestone</Text>
+          <Text style={s.sectionHeader}>{t('addMilestone')}</Text>
 
-          <Text style={s.inputLabel}>Title *</Text>
+          <Text style={s.inputLabel}>{t('milestoneTitle')}</Text>
           <TextInput
             style={[s.input, titleError ? s.inputError : null]}
             value={title}
@@ -125,7 +128,7 @@ export default function MilestonesScreen() {
           />
           {titleError ? <Text style={s.errorText}>{titleError}</Text> : null}
 
-          <Text style={s.inputLabel}>Category</Text>
+          <Text style={s.inputLabel}>{t('milestoneCategory')}</Text>
           <View style={s.categoryRow}>
             {CATEGORIES.map(({ key, label }) => (
               <TouchableOpacity
@@ -141,7 +144,7 @@ export default function MilestonesScreen() {
             ))}
           </View>
 
-          <Text style={s.inputLabel}>Date</Text>
+          <Text style={s.inputLabel}>{t('milestoneDate')}</Text>
           <TextInput
             style={s.input}
             value={dateStr}
@@ -150,12 +153,12 @@ export default function MilestonesScreen() {
             placeholderTextColor={theme.placeholder}
           />
 
-          <Text style={s.inputLabel}>Notes (optional)</Text>
+          <Text style={s.inputLabel}>{t('notesOptional')}</Text>
           <TextInput
             style={[s.input, s.notesInput]}
             value={notes}
             onChangeText={setNotes}
-            placeholder="Details about this milestone…"
+            placeholder={t('milestoneDetails')}
             placeholderTextColor={theme.placeholder}
             multiline
           />
@@ -168,7 +171,7 @@ export default function MilestonesScreen() {
           >
             {saving
               ? <ActivityIndicator color="#fff" />
-              : <Text style={s.addBtnText}>Save Milestone</Text>
+              : <Text style={s.addBtnText}>{t('saveMilestone')}</Text>
             }
           </TouchableOpacity>
         </View>
@@ -177,7 +180,7 @@ export default function MilestonesScreen() {
       {/* List */}
       {milestones.length > 0 ? (
         <View style={s.card}>
-          <Text style={s.sectionHeader}>All Milestones</Text>
+          <Text style={s.sectionHeader}>{t('allMilestones')}</Text>
           {milestones.map((item) => (
             <View key={item.id} style={s.milestoneRow}>
               <View style={s.milestoneMeta}>
@@ -194,14 +197,14 @@ export default function MilestonesScreen() {
                   style={s.deleteBtn}
                   accessibilityRole="button"
                 >
-                  <Text style={s.deleteBtnText}>Delete</Text>
+                  <Text style={s.deleteBtnText}>{t('delete')}</Text>
                 </TouchableOpacity>
               ) : null}
             </View>
           ))}
         </View>
       ) : (
-        <Text style={s.emptyText}>No milestones logged yet.</Text>
+        <Text style={s.emptyText}>{t('noMilestonesYet')}</Text>
       )}
 
       <View style={{ height: 48 }} />

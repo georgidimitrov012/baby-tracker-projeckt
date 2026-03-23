@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { useBaby }           from "../../context/BabyContext";
 import { useTheme }          from "../../context/ThemeContext";
+import { useLanguage }       from "../../context/LanguageContext";
 import { usePermissions }    from "../../hooks/usePermissions";
 import { useGrowth }         from "../../hooks/useGrowth";
 import { validateWeight }    from "../../utils/validation";
@@ -72,28 +73,29 @@ function getPercentileForAge(ageMonths) {
 
 function PercentileBadge({ currentWeight, ageMonths }) {
   const { theme } = useTheme();
+  const { t }     = useLanguage();
   if (ageMonths == null || currentWeight == null) return null;
 
   const { p3, p15, p50, p85, p97 } = getPercentileForAge(ageMonths);
 
-  let band, isWarning;
+  let bandKey, isWarning;
   if (currentWeight < p3) {
-    band = "Below 3rd percentile — mention to your doctor";
+    bandKey = "percentileBelow3";
     isWarning = true;
   } else if (currentWeight < p15) {
-    band = "3rd–15th percentile";
+    bandKey = "percentile3to15";
     isWarning = false;
   } else if (currentWeight < p50) {
-    band = "15th–50th percentile";
+    bandKey = "percentile15to50";
     isWarning = false;
   } else if (currentWeight < p85) {
-    band = "50th–85th percentile";
+    bandKey = "percentile50to85";
     isWarning = false;
   } else if (currentWeight < p97) {
-    band = "85th–97th percentile";
+    bandKey = "percentile85to97";
     isWarning = false;
   } else {
-    band = "Above 97th percentile — mention to your doctor";
+    bandKey = "percentileAbove97";
     isWarning = true;
   }
 
@@ -103,12 +105,12 @@ function PercentileBadge({ currentWeight, ageMonths }) {
 
   return (
     <View style={[pStyles.wrapper, { borderColor: borderC }]}>
-      <Text style={[pStyles.label, { color: theme.textMuted }]}>WHO Percentile Reference</Text>
+      <Text style={[pStyles.label, { color: theme.textMuted }]}>{t('whoPercentile')}</Text>
       <View style={[pStyles.bandChip, { backgroundColor: bandBg }]}>
-        <Text style={[pStyles.bandText, { color: bandFg }]}>{band}</Text>
+        <Text style={[pStyles.bandText, { color: bandFg }]}>{t(bandKey)}</Text>
       </View>
       <Text style={[pStyles.refText, { color: theme.textMuted }]}>
-        Reference at {Math.round(ageMonths)}mo: p3 = {p3} kg  ·  p50 = {p50} kg  ·  p97 = {p97} kg
+        {t('percentileRef', { age: Math.round(ageMonths), p3, p50, p97 })}
       </Text>
     </View>
   );
@@ -147,10 +149,11 @@ const pStyles = StyleSheet.create({
 
 // Minimal line-chart using Views
 function GrowthChart({ logs }) {
+  const { t } = useLanguage();
   if (logs.length < 2) {
     return (
       <View style={chartStyles.empty}>
-        <Text style={chartStyles.emptyText}>Add at least 2 weight logs to see a chart.</Text>
+        <Text style={chartStyles.emptyText}>{t('addTwoLogsForChart')}</Text>
       </View>
     );
   }
@@ -240,6 +243,7 @@ const chartStyles = StyleSheet.create({
 export default function GrowthScreen() {
   const { activeBaby, activeBabyId } = useBaby();
   const { theme }                    = useTheme();
+  const { t }                        = useLanguage();
   const { canEditBaby }              = usePermissions();
   const { logs, loading, error, addLog, removeLog } = useGrowth(activeBabyId);
 
@@ -257,7 +261,7 @@ export default function GrowthScreen() {
     const [y, m, d] = dateStr.split("-").map(Number);
     const date = new Date(y, m - 1, d);
     if (isNaN(date.getTime())) {
-      showAlert("Invalid date", "Please use YYYY-MM-DD format.");
+      showAlert(t('invalidDate'), t('invalidDateMsg'));
       return;
     }
 
@@ -269,19 +273,19 @@ export default function GrowthScreen() {
       setDateStr(dateKey(new Date()));
     } catch (e) {
       console.error("[Growth] add error:", e);
-      showAlert("Error", "Could not save weight log. Please try again.");
+      showAlert(t('error'), t('couldNotSaveWeight'));
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (log) => {
-    const ok = await showConfirm("Delete Log", `Delete weight entry of ${log.weight} kg?`);
+    const ok = await showConfirm(t('deleteLog'), t('deleteLogConfirm', { weight: log.weight }));
     if (!ok) return;
     try {
       await removeLog(log.id);
     } catch (e) {
-      showAlert("Error", "Could not delete log.");
+      showAlert(t('error'), t('couldNotDeleteLog'));
     }
   };
 
@@ -298,7 +302,7 @@ export default function GrowthScreen() {
   if (!activeBaby) {
     return (
       <View style={s.centered}>
-        <Text style={s.emptyText}>No baby selected.</Text>
+        <Text style={s.emptyText}>{t('noBabySelectedShort')}</Text>
       </View>
     );
   }
@@ -313,11 +317,11 @@ export default function GrowthScreen() {
 
   return (
     <ScrollView contentContainerStyle={s.container}>
-      <Text style={s.title}>📏 Growth — {activeBaby.name}</Text>
+      <Text style={s.title}>{t('growthTitle', { name: activeBaby.name })}</Text>
 
       {/* Chart */}
       <View style={s.card}>
-        <Text style={s.sectionHeader}>Weight Over Time (kg)</Text>
+        <Text style={s.sectionHeader}>{t('weightOverTime')}</Text>
         <GrowthChart logs={logs} />
         {ageMonths != null && logs.length > 0 ? (
           <PercentileBadge currentWeight={latestWeight} ageMonths={ageMonths} />
@@ -327,9 +331,9 @@ export default function GrowthScreen() {
       {/* Add form */}
       {canEditBaby ? (
         <View style={s.card}>
-          <Text style={s.sectionHeader}>Add Weight Log</Text>
+          <Text style={s.sectionHeader}>{t('addWeightLog')}</Text>
 
-          <Text style={s.inputLabel}>Weight (kg)</Text>
+          <Text style={s.inputLabel}>{t('weightKg')}</Text>
           <TextInput
             style={[s.input, weightError ? s.inputError : null]}
             value={weight}
@@ -340,15 +344,15 @@ export default function GrowthScreen() {
           />
           {weightError ? <Text style={s.errorText}>{weightError}</Text> : null}
 
-          <Text style={s.inputLabel}>Date</Text>
+          <Text style={s.inputLabel}>{t('milestoneDate')}</Text>
           <DatePickerInput
             value={dateStr || null}
             onChange={setDateStr}
-            placeholder="Tap to choose date"
+            placeholder={t('tapChooseDate')}
             maxDate={new Date()}
           />
 
-          <Text style={s.inputLabel}>Notes (optional)</Text>
+          <Text style={s.inputLabel}>{t('notesOptional')}</Text>
           <TextInput
             style={[s.input, s.notesInput]}
             value={notes}
@@ -366,7 +370,7 @@ export default function GrowthScreen() {
           >
             {saving
               ? <ActivityIndicator color="#fff" />
-              : <Text style={s.addBtnText}>Save Weight Log</Text>
+              : <Text style={s.addBtnText}>{t('saveWeightLog')}</Text>
             }
           </TouchableOpacity>
         </View>
@@ -375,7 +379,7 @@ export default function GrowthScreen() {
       {/* Log history */}
       {logs.length > 0 ? (
         <View style={s.card}>
-          <Text style={s.sectionHeader}>History</Text>
+          <Text style={s.sectionHeader}>{t('allLogs')}</Text>
           {[...logs].reverse().map((log) => (
             <View key={log.id} style={s.logRow}>
               <View style={{ flex: 1 }}>
@@ -389,14 +393,14 @@ export default function GrowthScreen() {
                   style={s.deleteBtn}
                   accessibilityRole="button"
                 >
-                  <Text style={s.deleteBtnText}>Delete</Text>
+                  <Text style={s.deleteBtnText}>{t('delete')}</Text>
                 </TouchableOpacity>
               ) : null}
             </View>
           ))}
         </View>
       ) : (
-        <Text style={s.emptyText}>No weight logs yet. Add one above.</Text>
+        <Text style={s.emptyText}>{t('noLogsYet')}</Text>
       )}
 
       <View style={{ height: 48 }} />

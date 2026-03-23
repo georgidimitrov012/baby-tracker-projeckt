@@ -17,12 +17,14 @@ import { addEvent }        from "../../services/eventStore";
 import { notifyCoParents } from "../../services/notificationService";
 import { showAlert }       from "../../utils/platform";
 import { useTheme }        from "../../context/ThemeContext";
+import { useLanguage }     from "../../context/LanguageContext";
 
 export default function Poop({ navigation }) {
   const { user }                     = useAuth();
   const { activeBabyId, activeBaby } = useBaby();
   const { canWriteEvents }           = usePermissions();
   const { theme }                    = useTheme();
+  const { t }                        = useLanguage();
   const s                            = makeStyles(theme);
 
   const [notes, setNotes]   = useState("");
@@ -33,12 +35,12 @@ export default function Poop({ navigation }) {
     if (isSubmitting.current) return;
 
     if (!activeBabyId) {
-      showAlert("No baby selected", "Please add or select a baby from the Dashboard first.");
+      showAlert(t('noBabySelectedAlert'), t('noBabySelectedMsg'));
       return;
     }
 
     if (!canWriteEvents) {
-      showAlert("Read only", "You don't have permission to log events.");
+      showAlert(t('readOnly'), t('noPermissionLog'));
       return;
     }
 
@@ -53,7 +55,7 @@ export default function Poop({ navigation }) {
       navigation.goBack();
     } catch (e) {
       console.error("[Poop] save error:", e);
-      showAlert("Error", "Could not save. Please try again.");
+      showAlert(t('error'), t('couldNotSave'));
     } finally {
       isSubmitting.current = false;
       setSaving(false);
@@ -70,13 +72,13 @@ export default function Poop({ navigation }) {
         keyboardShouldPersistTaps="handled"
       >
         <Text style={s.emoji}>💩</Text>
-        <Text style={s.title}>Log a Poop</Text>
+        <Text style={s.title}>{t('logPoopTitle')}</Text>
 
         <TextInput
           style={s.notesInput}
           value={notes}
           onChangeText={setNotes}
-          placeholder="Notes (optional)"
+          placeholder={t('notesOptional')}
           placeholderTextColor={theme.placeholder}
           multiline
           numberOfLines={3}
@@ -93,13 +95,13 @@ export default function Poop({ navigation }) {
         >
           {saving
             ? <ActivityIndicator color="#fff" />
-            : <Text style={s.btnText}>Confirm 💩</Text>
+            : <Text style={s.btnText}>{t('confirmPoop')}</Text>
           }
         </TouchableOpacity>
 
         {!canWriteEvents ? (
           <Text style={s.readOnlyNote}>
-            You have read-only access and cannot log events.
+            {t('readOnlyCannotLog')}
           </Text>
         ) : null}
       </ScrollView>

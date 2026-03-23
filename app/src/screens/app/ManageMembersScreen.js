@@ -8,8 +8,9 @@ import {
   StyleSheet,
   ScrollView,
 } from "react-native";
-import { useAuth }  from "../../context/AuthContext";
-import { useBaby }  from "../../context/BabyContext";
+import { useAuth }      from "../../context/AuthContext";
+import { useBaby }      from "../../context/BabyContext";
+import { useLanguage }  from "../../context/LanguageContext";
 import {
   removeParentFromBaby,
   changeMemberRole,
@@ -29,6 +30,7 @@ import { showConfirm, showAlert } from "../../utils/platform";
 export default function ManageMembersScreen({ navigation }) {
   const { user }                                    = useAuth();
   const { activeBaby, activeBabyId, refreshBabies } = useBaby();
+  const { t }                                       = useLanguage();
 
   const [acting, setActing]           = useState(null); // uid being acted on
   const [changingRole, setChangingRole] = useState(null); // uid whose role picker is open
@@ -36,7 +38,7 @@ export default function ManageMembersScreen({ navigation }) {
   if (!activeBaby) {
     return (
       <View style={styles.centered}>
-        <Text style={styles.emptyText}>No baby selected.</Text>
+        <Text style={styles.emptyText}>{t('noBabySelectedShort')}</Text>
       </View>
     );
   }
@@ -46,10 +48,10 @@ export default function ManageMembersScreen({ navigation }) {
 
   async function handleRemove(uid) {
     if (!can.removeMember(activeBaby, user.uid, uid)) {
-      showAlert("Not permitted", "You don't have permission to remove this member.");
+      showAlert(t('error'), t('notPermittedRemove'));
       return;
     }
-    const confirmed = await showConfirm("Remove member", "Remove this person's access to the baby?");
+    const confirmed = await showConfirm(t('removeMember'), t('removeMemberConfirm'));
     if (!confirmed) return;
 
     setActing(uid);
@@ -57,7 +59,7 @@ export default function ManageMembersScreen({ navigation }) {
       await removeParentFromBaby(activeBabyId, uid, activeBaby.members);
       await refreshBabies();
     } catch (e) {
-      showAlert("Error", "Could not remove member. Please try again.");
+      showAlert(t('error'), t('couldNotRemoveMember'));
     } finally {
       setActing(null);
     }
@@ -65,7 +67,7 @@ export default function ManageMembersScreen({ navigation }) {
 
   async function handleRoleChange(targetUid, newRole) {
     if (!can.changeRole(activeBaby, user.uid, targetUid)) {
-      showAlert("Not permitted", "You don't have permission to change this role.");
+      showAlert(t('error'), t('notPermittedRole'));
       return;
     }
 
@@ -75,7 +77,7 @@ export default function ManageMembersScreen({ navigation }) {
       await changeMemberRole(activeBabyId, targetUid, newRole);
       await refreshBabies();
     } catch (e) {
-      showAlert("Error", "Could not change role. Please try again.");
+      showAlert(t('error'), t('couldNotChangeRole'));
     } finally {
       setActing(null);
     }
@@ -83,8 +85,8 @@ export default function ManageMembersScreen({ navigation }) {
 
   async function handleTransferOwnership(targetUid) {
     const confirmed = await showConfirm(
-      "Transfer Ownership",
-      "This will make them the owner and demote you to Admin. This cannot be undone easily. Are you sure?"
+      t('transferOwnershipConfirm'),
+      t('transferOwnershipMsg')
     );
     if (!confirmed) return;
 
@@ -92,9 +94,9 @@ export default function ManageMembersScreen({ navigation }) {
     try {
       await transferOwnership(activeBabyId, user.uid, targetUid);
       await refreshBabies();
-      showAlert("Done", "Ownership transferred successfully.");
+      showAlert(t('ownershipTransferred'), t('ownershipTransferredMsg'));
     } catch (e) {
-      showAlert("Error", "Could not transfer ownership. Please try again.");
+      showAlert(t('error'), t('couldNotTransferOwnership'));
     } finally {
       setActing(null);
     }
@@ -118,10 +120,10 @@ export default function ManageMembersScreen({ navigation }) {
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.babyTitle}>
-        Members of <Text style={styles.babyName}>{activeBaby.name}</Text>
+        {t('membersOf')} <Text style={styles.babyName}>{activeBaby.name}</Text>
       </Text>
       <Text style={styles.myRoleText}>
-        Your role: <Text style={styles.myRoleBold}>{ROLE_LABELS[myRole]}</Text>
+        {t('yourRole')} <Text style={styles.myRoleBold}>{ROLE_LABELS[myRole]}</Text>
       </Text>
 
       {members.map(([uid, role]) => {
@@ -138,7 +140,7 @@ export default function ManageMembersScreen({ navigation }) {
             <View style={styles.memberRow}>
               <View style={styles.memberInfo}>
                 <Text style={styles.memberName}>
-                  {isYou ? "You" : `User ${uid.slice(0, 10)}…`}
+                  {isYou ? t('youLabel') : `User ${uid.slice(0, 10)}…`}
                 </Text>
                 <View style={[styles.rolePill, { backgroundColor: colors.bg }]}>
                   <Text style={[styles.rolePillText, { color: colors.text }]}>
@@ -157,7 +159,7 @@ export default function ManageMembersScreen({ navigation }) {
                       onPress={() => setChangingRole(showPicker ? null : uid)}
                     >
                       <Text style={styles.actionBtnText}>
-                        {showPicker ? "Cancel" : "Change Role"}
+                        {showPicker ? t('cancel') : t('changeRole')}
                       </Text>
                     </TouchableOpacity>
                   ) : null}
@@ -166,7 +168,7 @@ export default function ManageMembersScreen({ navigation }) {
                       style={[styles.actionBtn, styles.removeBtn]}
                       onPress={() => handleRemove(uid)}
                     >
-                      <Text style={styles.removeBtnText}>Remove</Text>
+                      <Text style={styles.removeBtnText}>{t('remove')}</Text>
                     </TouchableOpacity>
                   ) : null}
                 </View>
@@ -176,7 +178,7 @@ export default function ManageMembersScreen({ navigation }) {
             {/* Role picker — shown inline when "Change Role" is tapped */}
             {showPicker ? (
               <View style={styles.rolePicker}>
-                <Text style={styles.rolePickerLabel}>Assign role:</Text>
+                <Text style={styles.rolePickerLabel}>{t('assignRoleLabel')}</Text>
                 {assignableRoles.map((r) => (
                   <TouchableOpacity
                     key={r}
@@ -202,10 +204,10 @@ export default function ManageMembersScreen({ navigation }) {
                   >
                     <View style={styles.roleOptionLeft}>
                       <Text style={[styles.roleOptionName, { color: "#c62828" }]}>
-                        Transfer Ownership
+                        {t('transferOwnership')}
                       </Text>
                       <Text style={styles.roleOptionDesc}>
-                        Make them the owner. You become Admin.
+                        {t('transferOwnershipDesc')}
                       </Text>
                     </View>
                   </TouchableOpacity>
@@ -223,7 +225,7 @@ export default function ManageMembersScreen({ navigation }) {
           onPress={() => navigation.navigate("InviteParent")}
           accessibilityRole="button"
         >
-          <Text style={styles.inviteBtnText}>+ Invite a Parent</Text>
+          <Text style={styles.inviteBtnText}>{t('inviteAParent')}</Text>
         </TouchableOpacity>
       ) : null}
     </ScrollView>

@@ -10,8 +10,9 @@ import {
   Platform,
   ScrollView,
 } from "react-native";
-import { useAuth }  from "../../context/AuthContext";
-import { useBaby }  from "../../context/BabyContext";
+import { useAuth }      from "../../context/AuthContext";
+import { useBaby }      from "../../context/BabyContext";
+import { useLanguage }  from "../../context/LanguageContext";
 import {
   sendInvite,
   getOutgoingInvites,
@@ -28,6 +29,7 @@ import { showAlert, showConfirm } from "../../utils/platform";
 export default function InviteParentScreen() {
   const { user }                     = useAuth();
   const { activeBaby, activeBabyId } = useBaby();
+  const { t }                        = useLanguage();
 
   const [email, setEmail]                   = useState("");
   const [emailError, setEmailError]         = useState(null);
@@ -58,9 +60,9 @@ export default function InviteParentScreen() {
   }
 
   function validateEmail(v) {
-    if (!v.trim()) return "Email is required.";
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim())) return "Enter a valid email address.";
-    if (v.trim().toLowerCase() === user.email.toLowerCase()) return "You cannot invite yourself.";
+    if (!v.trim()) return t('emailRequired');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim())) return t('enterValidEmail');
+    if (v.trim().toLowerCase() === user.email.toLowerCase()) return t('cannotInviteSelf');
     return null;
   }
 
@@ -83,17 +85,17 @@ export default function InviteParentScreen() {
       );
 
       if (result === "already_pending") {
-        showAlert("Already invited", `A pending invite already exists for ${email.trim()}.`);
+        showAlert(t('alreadyPending'), t('alreadyPendingMsg', { email: email.trim() }));
       } else {
         setEmail("");
         showAlert(
-          "Invite sent! 📬",
-          `${email.trim()} will be invited as ${ROLE_LABELS[selectedRole]}.`
+          t('inviteSentTitle'),
+          t('inviteSentMsg', { email: email.trim(), role: ROLE_LABELS[selectedRole] })
         );
         await loadInvites();
       }
     } catch (e) {
-      showAlert("Error", "Could not send invite. Please try again.");
+      showAlert(t('error'), t('couldNotSendInvite'));
     } finally {
       isSubmitting.current = false;
       setSending(false);
@@ -101,13 +103,13 @@ export default function InviteParentScreen() {
   }
 
   async function handleCancel(invite) {
-    const confirmed = await showConfirm("Cancel invite", `Cancel invite to ${invite.toEmail}?`);
+    const confirmed = await showConfirm(t('cancelInvite'), t('cancelInviteConfirm', { email: invite.toEmail }));
     if (!confirmed) return;
     try {
       await cancelInvite(invite.id);
       setInvites((prev) => prev.filter((i) => i.id !== invite.id));
     } catch (e) {
-      showAlert("Error", "Could not cancel invite.");
+      showAlert(t('error'), t('couldNotCancelInvite'));
     }
   }
 
@@ -125,17 +127,17 @@ export default function InviteParentScreen() {
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
 
         <Text style={styles.babyLabel}>
-          Inviting someone to{" "}
+          {t('invitingTo')}{" "}
           <Text style={styles.babyName}>{activeBaby?.name ?? "this baby"}</Text>
         </Text>
 
         {/* Email input */}
-        <Text style={styles.sectionLabel}>Email Address</Text>
+        <Text style={styles.sectionLabel}>{t('emailAddress')}</Text>
         <TextInput
           style={[styles.input, emailError && styles.inputError]}
           value={email}
           onChangeText={(v) => { setEmail(v); if (emailError) setEmailError(null); }}
-          placeholder="Their email address"
+          placeholder={t('theirEmailPlaceholder')}
           placeholderTextColor="#bbb"
           autoCapitalize="none"
           keyboardType="email-address"
@@ -144,7 +146,7 @@ export default function InviteParentScreen() {
         {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
 
         {/* Role picker */}
-        <Text style={[styles.sectionLabel, { marginTop: 20 }]}>Assign Role</Text>
+        <Text style={[styles.sectionLabel, { marginTop: 20 }]}>{t('assignRole')}</Text>
         {invitableRoles.map((role) => (
           <TouchableOpacity
             key={role}
@@ -165,9 +167,7 @@ export default function InviteParentScreen() {
           </TouchableOpacity>
         ))}
 
-        <Text style={styles.hint}>
-          Works even if they don't have an account yet — they'll see the invite after registering with this email.
-        </Text>
+        <Text style={styles.hint}>{t('inviteHint')}</Text>
 
         <TouchableOpacity
           style={[styles.btn, sending && styles.btnDisabled]}
@@ -178,17 +178,17 @@ export default function InviteParentScreen() {
           {sending
             ? <ActivityIndicator color="#fff" />
             : <Text style={styles.btnText}>
-                Send Invite as {ROLE_LABELS[selectedRole]}
+                {t('sendInviteAs', { role: ROLE_LABELS[selectedRole] })}
               </Text>
           }
         </TouchableOpacity>
 
         {/* Sent invites */}
-        <Text style={[styles.sectionLabel, { marginTop: 36 }]}>Sent Invites</Text>
+        <Text style={[styles.sectionLabel, { marginTop: 36 }]}>{t('sentInvites')}</Text>
         {loadingInvites ? (
           <ActivityIndicator color="#1565c0" style={{ marginTop: 12 }} />
         ) : invites.length === 0 ? (
-          <Text style={styles.empty}>No invites sent yet.</Text>
+          <Text style={styles.empty}>{t('noInvitesSent')}</Text>
         ) : (
           invites.map((invite) => (
             <View key={invite.id} style={styles.inviteRow}>
@@ -207,7 +207,7 @@ export default function InviteParentScreen() {
                   style={styles.cancelBtn}
                   onPress={() => handleCancel(invite)}
                 >
-                  <Text style={styles.cancelText}>Cancel</Text>
+                  <Text style={styles.cancelText}>{t('cancel')}</Text>
                 </TouchableOpacity>
               ) : null}
             </View>

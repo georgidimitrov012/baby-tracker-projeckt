@@ -1,6 +1,7 @@
 import React from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { useTheme } from "../context/ThemeContext";
+import { useTheme }    from "../context/ThemeContext";
+import { useLanguage } from "../context/LanguageContext";
 import InviteParentScreen  from "../screens/app/InviteParentScreen";
 import InvitesScreen       from "../screens/app/InvitesScreen";
 import ManageMembersScreen from "../screens/app/ManageMembersScreen";
@@ -28,6 +29,7 @@ const Stack = createNativeStackNavigator();
  */
 export default function AppNavigator() {
   const { theme } = useTheme();
+  const { t }     = useLanguage();
 
   return (
     <Stack.Navigator
@@ -42,89 +44,89 @@ export default function AppNavigator() {
       <Stack.Screen
         name="Dashboard"
         component={Dashboard}
-        options={{ title: "Baby Tracker 👶" }}
+        options={{ title: t('navTitleDashboard') }}
       />
       <Stack.Screen
         name="Feeding"
         component={Feeding}
-        options={{ title: "Log Feeding" }}
+        options={{ title: t('navTitleFeeding') }}
       />
       <Stack.Screen
         name="Sleep"
         component={Sleep}
-        options={{ title: "Sleep Tracker" }}
+        options={{ title: t('navTitleSleep') }}
       />
       <Stack.Screen
         name="Poop"
         component={Poop}
-        options={{ title: "Log Poop" }}
+        options={{ title: t('navTitlePoop') }}
       />
       <Stack.Screen
         name="Pee"
         component={Pee}
-        options={{ title: "Log Pee" }}
+        options={{ title: t('navTitlePee') }}
       />
       <Stack.Screen
         name="History"
         component={History}
-        options={{ title: "History" }}
+        options={{ title: t('navTitleHistory') }}
       />
       <Stack.Screen
         name="EditEvent"
         component={EditEvent}
-        options={{ title: "Edit Event" }}
+        options={{ title: t('navTitleEditEvent') }}
       />
       <Stack.Screen
         name="BabySelector"
         component={BabySelector}
-        options={{ title: "My Babies" }}
+        options={{ title: t('navTitleBabySelector') }}
       />
       <Stack.Screen
         name="BabyProfile"
         component={BabyProfileScreen}
-        options={{ title: "Baby Profile" }}
+        options={{ title: t('navTitleBabyProfile') }}
       />
       <Stack.Screen
         name="PrivacyPolicy"
         component={PrivacyPolicyScreen}
-        options={{ title: "Privacy Policy" }}
+        options={{ title: t('navTitlePrivacyPolicy') }}
       />
       <Stack.Screen
         name="InviteParent"
         component={InviteParentScreen}
-        options={{ title: "Invite Parent" }}
+        options={{ title: t('navTitleInviteParent') }}
       />
       <Stack.Screen
         name="Invites"
         component={InvitesScreen}
-        options={{ title: "Pending Invites" }}
+        options={{ title: t('navTitleInvites') }}
       />
       <Stack.Screen
         name="ManageMembers"
         component={ManageMembersScreen}
-        options={{ title: "Manage Members" }}
+        options={{ title: t('navTitleManageMembers') }}
       />
       <Stack.Screen
         name="Analytics"
         component={AnalyticsScreen}
-        options={{ title: "Analytics" }}
+        options={{ title: t('navTitleAnalytics') }}
       />
       <Stack.Screen
         name="Settings"
         component={SettingsScreen}
-        options={{ title: "Settings" }}
+        options={{ title: t('navTitleSettings') }}
       />
       <Stack.Screen
         name="Growth"
         component={GrowthScreen}
-        options={{ title: "Growth" }}
+        options={{ title: t('navTitleGrowth') }}
       />
       <Stack.Screen
         name="Milestones"
         component={MilestonesScreen}
-        options={{ title: "Milestones" }}
+        options={{ title: t('navTitleMilestones') }}
       />
-      <Stack.Screen name="Vaccines" component={VaccineScreen} options={{ title: "Vaccines 💉" }} />
+      <Stack.Screen name="Vaccines" component={VaccineScreen} options={{ title: t('navTitleVaccines') }} />
     </Stack.Navigator>
   );
 }

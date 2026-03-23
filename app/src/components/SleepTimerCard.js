@@ -9,9 +9,11 @@ import {
 import { useSleepTimer, formatElapsed } from "../hooks/useSleepTimer";
 import { usePermissions }               from "../hooks/usePermissions";
 import { useTheme }                     from "../context/ThemeContext";
+import { useLanguage }                  from "../context/LanguageContext";
 
 export default function SleepTimerCard({ compact = false }) {
   const { theme } = useTheme();
+  const { t }     = useLanguage();
   const {
     isActive,
     elapsedSeconds,
@@ -41,13 +43,13 @@ export default function SleepTimerCard({ compact = false }) {
             <View style={s.pulseOuter}>
               <View style={s.pulseInner} />
             </View>
-            <Text style={s.activeLabel}>Baby is sleeping</Text>
+            <Text style={s.activeLabel}>{t('babyIsSleeping')}</Text>
           </View>
 
           <Text style={s.timer}>{formatElapsed(elapsedSeconds)}</Text>
 
           {startTimeStr ? (
-            <Text style={s.startedAt}>Started at {startTimeStr}</Text>
+            <Text style={s.startedAt}>{t('startedAt')} {startTimeStr}</Text>
           ) : null}
 
           {canWriteEvents ? (
@@ -60,32 +62,32 @@ export default function SleepTimerCard({ compact = false }) {
             >
               {stopping
                 ? <ActivityIndicator color="#fff" size="small" />
-                : <Text style={s.btnText}>⏹  Stop Sleep</Text>
+                : <Text style={s.btnText}>{t('stopSleep')}</Text>
               }
             </TouchableOpacity>
           ) : (
-            <Text style={s.readOnlyNote}>Read-only — cannot stop timer</Text>
+            <Text style={s.readOnlyNote}>{t('readOnlyCannotStop')}</Text>
           )}
         </>
       ) : (
         <>
-          <Text style={s.inactiveLabel}>😴 Sleep Tracker</Text>
+          <Text style={s.inactiveLabel}>{t('sleepTrackerCard')}</Text>
           {!compact ? (
-            <Text style={s.hint}>Tap Start when your baby falls asleep.</Text>
+            <Text style={s.hint}>{t('tapStartWhenSleeping')}</Text>
           ) : null}
           {canWriteEvents ? (
             <>
               <View style={s.typeRow}>
-                {["nap", "night"].map((t) => (
+                {["nap", "night"].map((sType) => (
                   <TouchableOpacity
-                    key={t}
-                    style={[s.typeBtn, sleepType === t && s.typeBtnActive]}
-                    onPress={() => setSleepType(t)}
+                    key={sType}
+                    style={[s.typeBtn, sleepType === sType && s.typeBtnActive]}
+                    onPress={() => setSleepType(sType)}
                     accessibilityRole="button"
-                    accessibilityLabel={t === "nap" ? "Nap" : "Night sleep"}
+                    accessibilityLabel={sType === "nap" ? "Nap" : "Night sleep"}
                   >
-                    <Text style={[s.typeBtnText, sleepType === t && s.typeBtnTextActive]}>
-                      {t === "nap" ? "💤 Nap" : "🌙 Night"}
+                    <Text style={[s.typeBtnText, sleepType === sType && s.typeBtnTextActive]}>
+                      {sType === "nap" ? t('napType') : t('nightType')}
                     </Text>
                   </TouchableOpacity>
                 ))}
@@ -99,7 +101,7 @@ export default function SleepTimerCard({ compact = false }) {
               >
                 {starting
                   ? <ActivityIndicator color="#fff" size="small" />
-                  : <Text style={s.btnText}>▶  Start Sleep</Text>
+                  : <Text style={s.btnText}>{t('startSleep')}</Text>
                 }
               </TouchableOpacity>
             </>

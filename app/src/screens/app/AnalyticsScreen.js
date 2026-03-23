@@ -16,8 +16,9 @@ import MiniBarChart         from "../../components/charts/MiniBarChart";
 import { ROLES }            from "../../utils/permissions";
 import { exportEventsToCsvFile } from "../../utils/csvExport";
 import { useTheme }         from "../../context/ThemeContext";
+import { useLanguage }      from "../../context/LanguageContext";
 
-// ── Stat card ────────────────────────────────────────────────
+// ── Stat card ────────────────────────────────────────
 function StatCard({ icon, label, value, sub, color = "#e3f2fd", textColor = "#1565c0" }) {
   return (
     <View style={[styles.statCard, { backgroundColor: color }]}>
@@ -29,12 +30,12 @@ function StatCard({ icon, label, value, sub, color = "#e3f2fd", textColor = "#15
   );
 }
 
-// ── Section header ────────────────────────────────────────────
+// ── Section header ────────────────────────────────────
 function SectionHeader({ title }) {
   return <Text style={styles.sectionHeader}>{title}</Text>;
 }
 
-// ── Insight card (themed) ──────────────────────────────────────
+// ── Insight card (themed) ──────────────────────────────────
 function InsightCard({ icon, title, value, subtitle, bgColor, valueColor }) {
   const { theme } = useTheme();
   return (
@@ -67,6 +68,7 @@ export default function AnalyticsScreen() {
   const { activeBaby, activeBabyId } = useBaby();
   const { myRole }                   = usePermissions();
   const { theme }                    = useTheme();
+  const { t }                        = useLanguage();
 
   const [range, setRange]            = useState(7); // 7 or 30
   const [exporting, setExporting]    = useState(false);
@@ -97,7 +99,7 @@ export default function AnalyticsScreen() {
   if (!activeBaby) {
     return (
       <View style={styles.centered}>
-        <Text style={styles.emptyText}>No baby selected.</Text>
+        <Text style={styles.emptyText}>{t('noBabySelectedShort')}</Text>
       </View>
     );
   }
@@ -106,7 +108,7 @@ export default function AnalyticsScreen() {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color="#1565c0" />
-        <Text style={styles.loadingText}>Loading statistics…</Text>
+        <Text style={styles.loadingText}>{t('loadingStats')}</Text>
       </View>
     );
   }
@@ -114,7 +116,7 @@ export default function AnalyticsScreen() {
   if (error) {
     return (
       <View style={styles.centered}>
-        <Text style={styles.errorText}>Could not load analytics. Pull to retry.</Text>
+        <Text style={styles.errorText}>{t('couldNotLoadAnalytics')}</Text>
       </View>
     );
   }
@@ -144,7 +146,7 @@ export default function AnalyticsScreen() {
           >
             {exporting
               ? <ActivityIndicator size="small" color="#1565c0" />
-              : <Text style={styles.exportBtnText}>📤 Export CSV</Text>
+              : <Text style={styles.exportBtnText}>{t('exportCsv')}</Text>
             }
           </TouchableOpacity>
         ) : null}
@@ -153,40 +155,40 @@ export default function AnalyticsScreen() {
       {isPediatrician ? (
         <View style={styles.pediBanner}>
           <Text style={styles.pediBannerText}>
-            👨‍⚕️ Viewing aggregated statistics only
+            {t('viewingAggregatedOnly')}
           </Text>
         </View>
       ) : null}
 
       {/* ── Today Summary ─────────────────────────────────── */}
-      <SectionHeader title="Today" />
+      <SectionHeader title={t('today')} />
       <View style={styles.cardGrid}>
         <StatCard
           icon="🍼"
-          label="Feeding"
+          label={t('feeding')}
           value={stats.todayFeedTotal > 0 ? `${stats.todayFeedTotal} ml` : "—"}
-          sub={stats.todayFeedCount > 0 ? `${stats.todayFeedCount} sessions` : null}
+          sub={stats.todayFeedCount > 0 ? `${stats.todayFeedCount} ${t('sessions')}` : null}
           color="#e3f2fd"
           textColor="#1565c0"
         />
         <StatCard
           icon="😴"
-          label="Sleep"
+          label={t('sleep')}
           value={fmtMinutes(stats.todaySleepTotal)}
-          sub={stats.todaySleepCount > 0 ? `${stats.todaySleepCount} sessions` : null}
+          sub={stats.todaySleepCount > 0 ? `${stats.todaySleepCount} ${t('sessions')}` : null}
           color="#ede7f6"
           textColor="#4527a0"
         />
         <StatCard
           icon="💩"
-          label="Poops"
+          label={t('poops')}
           value={String(stats.todayPoopCount || "—")}
           color="#fff8e1"
           textColor="#e65100"
         />
         <StatCard
           icon="💧"
-          label="Pees"
+          label={t('pees')}
           value={String(stats.todayPeeCount || "—")}
           color="#e0f7fa"
           textColor="#00695c"
@@ -194,19 +196,19 @@ export default function AnalyticsScreen() {
       </View>
 
       {/* ── Last 24h ──────────────────────────────────────── */}
-      <SectionHeader title="Last 24 Hours" />
+      <SectionHeader title={t('last24h')} />
       <View style={styles.cardRow}>
         <View style={[styles.summaryCard, { flex: 1 }]}>
           <Text style={styles.summaryValue}>
             {stats.last24FeedTotal > 0 ? `${stats.last24FeedTotal} ml` : "—"}
           </Text>
-          <Text style={styles.summaryLabel}>Total feeding</Text>
+          <Text style={styles.summaryLabel}>{t('totalFeeding')}</Text>
         </View>
         <View style={[styles.summaryCard, { flex: 1 }]}>
           <Text style={styles.summaryValue}>
             {fmtMinutes(stats.last24SleepTotal)}
           </Text>
-          <Text style={styles.summaryLabel}>Total sleep</Text>
+          <Text style={styles.summaryLabel}>{t('totalSleep')}</Text>
         </View>
       </View>
 
@@ -216,30 +218,30 @@ export default function AnalyticsScreen() {
           <Text style={styles.summaryValue}>
             {fmtTime(stats.lastFeeding?.time)}
           </Text>
-          <Text style={styles.summaryLabel}>Last feeding</Text>
+          <Text style={styles.summaryLabel}>{t('lastFeeding')}</Text>
         </View>
         <View style={[styles.summaryCard, { flex: 1 }]}>
           <Text style={styles.summaryValue}>
             {fmtTime(stats.lastSleep?.time)}
           </Text>
-          <Text style={styles.summaryLabel}>Last sleep</Text>
+          <Text style={styles.summaryLabel}>{t('lastSleep')}</Text>
         </View>
       </View>
 
       {/* ── Sleep stats ────────────────────────────────────── */}
-      <SectionHeader title="Sleep Averages" />
+      <SectionHeader title={t('sleepAverages')} />
       <View style={styles.cardRow}>
         <View style={[styles.summaryCard, { flex: 1 }]}>
           <Text style={styles.summaryValue}>{fmtMinutes(stats.avgSleep)}</Text>
-          <Text style={styles.summaryLabel}>Avg session</Text>
+          <Text style={styles.summaryLabel}>{t('avgSession')}</Text>
         </View>
         <View style={[styles.summaryCard, { flex: 1 }]}>
           <Text style={styles.summaryValue}>{fmtMinutes(stats.longestSleep)}</Text>
-          <Text style={styles.summaryLabel}>Longest session</Text>
+          <Text style={styles.summaryLabel}>{t('longestSession')}</Text>
         </View>
         <View style={[styles.summaryCard, { flex: 1 }]}>
           <Text style={styles.summaryValue}>{fmtMinutes(stats.avgFeeding)}</Text>
-          <Text style={styles.summaryLabel}>Avg feeding</Text>
+          <Text style={styles.summaryLabel}>{t('avgFeeding')}</Text>
         </View>
       </View>
 
@@ -252,14 +254,14 @@ export default function AnalyticsScreen() {
             onPress={() => setRange(r)}
           >
             <Text style={[styles.rangeBtnText, range === r && styles.rangeBtnTextActive]}>
-              {r === 7 ? "7 days" : "30 days"}
+              {r === 7 ? t('sevenDays') : t('thirtyDays')}
             </Text>
           </TouchableOpacity>
         ))}
       </View>
 
       {/* ── Feeding chart ─────────────────────────────────── */}
-      <SectionHeader title={`Feeding — last ${range} days`} />
+      <SectionHeader title={t('feedingChartTitle', { n: range })} />
       <View style={styles.chartCard}>
         <MiniBarChart
           data={feedChart}
@@ -268,11 +270,11 @@ export default function AnalyticsScreen() {
           formatValue={(v) => `${v}`}
           unit=" ml"
         />
-        <Text style={styles.chartNote}>ml per day · today is rightmost bar</Text>
+        <Text style={styles.chartNote}>{t('mlPerDay')}</Text>
       </View>
 
       {/* ── Sleep chart ───────────────────────────────────── */}
-      <SectionHeader title={`Sleep — last ${range} days`} />
+      <SectionHeader title={t('sleepChartTitle', { n: range })} />
       <View style={styles.chartCard}>
         <MiniBarChart
           data={sleepChart}
@@ -280,25 +282,25 @@ export default function AnalyticsScreen() {
           height={100}
           formatValue={(v) => fmtMinutes(v)}
         />
-        <Text style={styles.chartNote}>minutes per day · today is rightmost bar</Text>
+        <Text style={styles.chartNote}>{t('minPerDay')}</Text>
       </View>
 
       {/* ── Sleep breakdown ──────────────────────────────── */}
       {(stats.avgNapDuration > 0 || stats.avgNightDuration > 0) ? (
         <>
-          <SectionHeader title="Sleep Breakdown" />
+          <SectionHeader title={t('sleepBreakdown')} />
           <View style={styles.cardRow}>
             <View style={[styles.summaryCard, { flex: 1 }]}>
               <Text style={styles.summaryValue}>{fmtMinutes(stats.avgNapDuration)}</Text>
-              <Text style={styles.summaryLabel}>Avg nap</Text>
+              <Text style={styles.summaryLabel}>{t('avgNap')}</Text>
             </View>
             <View style={[styles.summaryCard, { flex: 1 }]}>
               <Text style={styles.summaryValue}>{fmtMinutes(stats.avgNightDuration)}</Text>
-              <Text style={styles.summaryLabel}>Avg night</Text>
+              <Text style={styles.summaryLabel}>{t('avgNight')}</Text>
             </View>
             <View style={[styles.summaryCard, { flex: 1 }]}>
               <Text style={styles.summaryValue}>{fmtMinutes(stats.todayNapTotal)}</Text>
-              <Text style={styles.summaryLabel}>Today naps</Text>
+              <Text style={styles.summaryLabel}>{t('todayNaps')}</Text>
             </View>
           </View>
         </>
@@ -307,13 +309,13 @@ export default function AnalyticsScreen() {
       {/* ── Insights ─────────────────────────────────────── */}
       {!isPediatrician ? (
         <>
-          <SectionHeader title="Insights" />
+          <SectionHeader title={t('insights')} />
           <View style={styles.cardRow}>
             <View style={[styles.summaryCard, { flex: 1 }]}>
               <Text style={styles.summaryValue}>
                 {insights.avgFeedingGapMin != null ? fmtMinutes(insights.avgFeedingGapMin) : "—"}
               </Text>
-              <Text style={styles.summaryLabel}>Avg gap between feedings</Text>
+              <Text style={styles.summaryLabel}>{t('avgGapBetweenFeedings')}</Text>
             </View>
             <View style={[styles.summaryCard, { flex: 1 }]}>
               <Text style={styles.summaryValue}>
@@ -321,7 +323,7 @@ export default function AnalyticsScreen() {
                   ? fmtMinutes(insights.avgSleepOnsetAfterFeedingMin)
                   : "—"}
               </Text>
-              <Text style={styles.summaryLabel}>Sleep after feeding</Text>
+              <Text style={styles.summaryLabel}>{t('sleepAfterFeeding')}</Text>
             </View>
           </View>
           {insights.sleepTrendPercent != null ? (
@@ -330,13 +332,11 @@ export default function AnalyticsScreen() {
                 {insights.sleepTrendDirection === "up" ? "↑" : insights.sleepTrendDirection === "down" ? "↓" : "→"}
               </Text>
               <Text style={styles.trendText}>
-                Weekly sleep{" "}
                 {insights.sleepTrendDirection === "up"
-                  ? `improved +${Math.abs(insights.sleepTrendPercent)}%`
+                  ? t('sleepImproved', { pct: Math.abs(insights.sleepTrendPercent) })
                   : insights.sleepTrendDirection === "down"
-                    ? `declined ${insights.sleepTrendPercent}%`
-                    : "stable"}{" "}
-                vs last week
+                    ? t('sleepDeclined', { pct: insights.sleepTrendPercent })
+                    : t('sleepStable')}
               </Text>
             </View>
           ) : null}
@@ -350,18 +350,18 @@ export default function AnalyticsScreen() {
         insights.avgSleepOnsetAfterFeedingMin != null
       ) ? (
         <>
-          <SectionHeader title="Patterns" />
+          <SectionHeader title={t('patterns')} />
           <View style={styles.cardRow}>
             {insights.avgFeedingGapMin != null ? (
               <InsightCard
                 icon="🍼"
-                title="Feeding Rhythm"
+                title={t('feedingRhythm')}
                 value={(() => {
                   const h = Math.floor(insights.avgFeedingGapMin / 60);
                   const m = insights.avgFeedingGapMin % 60;
                   return h > 0 ? (m > 0 ? `Every ~${h}h ${m}m` : `Every ~${h}h`) : `Every ~${m}m`;
                 })()}
-                subtitle="average gap between feeds this week"
+                subtitle={t('avgGapSubtitle')}
                 bgColor={theme.primaryLight}
                 valueColor={theme.primary}
               />
@@ -373,13 +373,13 @@ export default function AnalyticsScreen() {
                   : insights.sleepTrendDirection === "down" ? "📉"
                   : "📊"
                 }
-                title="Sleep Trend"
+                title={t('sleepTrend')}
                 value={
                   insights.sleepTrendDirection === "stable"
-                    ? "Stable"
+                    ? t('stable')
                     : `${insights.sleepTrendPercent > 0 ? "+" : ""}${insights.sleepTrendPercent}%`
                 }
-                subtitle="vs previous week"
+                subtitle={t('vsPreviousWeek')}
                 bgColor={
                   insights.sleepTrendDirection === "up" ? theme.successLight
                   : insights.sleepTrendDirection === "down" ? theme.warningLight
@@ -395,9 +395,9 @@ export default function AnalyticsScreen() {
             {insights.avgSleepOnsetAfterFeedingMin != null ? (
               <InsightCard
                 icon="😴"
-                title="Falls Asleep"
+                title={t('fallsAsleep')}
                 value={`~${insights.avgSleepOnsetAfterFeedingMin}m after feeding`}
-                subtitle="average time from feed to sleep"
+                subtitle={t('avgTimeFromFeedToSleep')}
                 bgColor={theme.accentLight}
                 valueColor={theme.accent}
               />
@@ -409,13 +409,13 @@ export default function AnalyticsScreen() {
       {/* ── Detailed table — hidden for pediatricians ─────── */}
       {!isPediatrician ? (
         <>
-          <SectionHeader title="Daily Breakdown" />
+          <SectionHeader title={t('dailyBreakdown')} />
           <View style={styles.table}>
             {/* Header */}
             <View style={[styles.tableRow, styles.tableHeader]}>
-              <Text style={[styles.tableCell, styles.tableCellHeader, { flex: 2 }]}>Day</Text>
-              <Text style={[styles.tableCell, styles.tableCellHeader]}>Feed</Text>
-              <Text style={[styles.tableCell, styles.tableCellHeader]}>Sleep</Text>
+              <Text style={[styles.tableCell, styles.tableCellHeader, { flex: 2 }]}>{t('day')}</Text>
+              <Text style={[styles.tableCell, styles.tableCellHeader]}>{t('feeding')}</Text>
+              <Text style={[styles.tableCell, styles.tableCellHeader]}>{t('sleep')}</Text>
               <Text style={[styles.tableCell, styles.tableCellHeader]}>💩</Text>
               <Text style={[styles.tableCell, styles.tableCellHeader]}>💧</Text>
             </View>

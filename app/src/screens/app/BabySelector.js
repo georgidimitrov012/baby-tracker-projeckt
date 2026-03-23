@@ -11,9 +11,10 @@ import {
   ScrollView,
   Image,
 } from "react-native";
-import { useBaby }    from "../../context/BabyContext";
-import { showAlert }  from "../../utils/platform";
-import { useTheme }   from "../../context/ThemeContext";
+import { useBaby }       from "../../context/BabyContext";
+import { showAlert }     from "../../utils/platform";
+import { useTheme }      from "../../context/ThemeContext";
+import { useLanguage }   from "../../context/LanguageContext";
 
 function computeAge(birthDate) {
   // birthDate is a Firestore Timestamp — call .toDate() on it
@@ -48,6 +49,7 @@ function computeAge(birthDate) {
 
 export default function BabySelector({ navigation }) {
   const { theme } = useTheme();
+  const { t }     = useLanguage();
   const s = makeStyles(theme);
   const { babies, activeBabyId, setActiveBabyId, addBaby, loadingBabies, babiesError } = useBaby();
 
@@ -63,7 +65,7 @@ export default function BabySelector({ navigation }) {
   const handleAdd = async () => {
     if (isSubmitting.current) return;
     if (!newBabyName.trim()) {
-      showAlert("Name required", "Please enter a name for the baby.");
+      showAlert(t('nameRequired'), t('enterBabyName'));
       return;
     }
 
@@ -76,7 +78,7 @@ export default function BabySelector({ navigation }) {
       navigation.goBack();
     } catch (e) {
       console.error("[BabySelector] addBaby error:", e);
-      showAlert("Error", "Could not add baby. Please try again.");
+      showAlert(t('error'), t('couldNotAddBaby'));
     } finally {
       isSubmitting.current = false;
       setAdding(false);
@@ -97,12 +99,12 @@ export default function BabySelector({ navigation }) {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <ScrollView contentContainerStyle={s.container} keyboardShouldPersistTaps="handled">
-        <Text style={s.sectionLabel}>Select Baby</Text>
+        <Text style={s.sectionLabel}>{t('selectBaby')}</Text>
 
         {babiesError ? (
           <Text style={[s.empty, { color: "#c62828" }]}>{babiesError}</Text>
         ) : babies.length === 0 ? (
-          <Text style={s.empty}>No babies yet — add one below.</Text>
+          <Text style={s.empty}>{t('noBabiesYet')}</Text>
         ) : (
           babies.map((baby) => {
             const isActive = baby.id === activeBabyId;
@@ -141,13 +143,13 @@ export default function BabySelector({ navigation }) {
           })
         )}
 
-        <Text style={[s.sectionLabel, { marginTop: 32 }]}>Add a Baby</Text>
+        <Text style={[s.sectionLabel, { marginTop: 32 }]}>{t('addABaby')}</Text>
 
         <TextInput
           style={s.input}
           value={newBabyName}
           onChangeText={setNewBabyName}
-          placeholder="Baby's name"
+          placeholder={t('babyNamePlaceholder')}
           placeholderTextColor={theme.placeholder}
           returnKeyType="done"
           onSubmitEditing={handleAdd}
@@ -162,7 +164,7 @@ export default function BabySelector({ navigation }) {
         >
           {adding
             ? <ActivityIndicator color="#fff" />
-            : <Text style={s.btnText}>Add Baby</Text>
+            : <Text style={s.btnText}>{t('addBabyBtn')}</Text>
           }
         </TouchableOpacity>
       </ScrollView>
